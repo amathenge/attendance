@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% from 'utils.j2' import menu, file_upload %}
+
+{% block title %}&nbsp;{% endblock %}
+
+{% block heading %}FAWA Statements{% endblock %}
+
+{% block content %}
+
+{% set user = session['user'] %}
+
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            {{ menu(menuitems) }}
+        </div>
+    </div>
+    <div class="row justify-content-center">
+        <div class="col-6">
+            {{ file_upload(url_for('importfile'), 'Import Attendance File') }}
+        </div>
+    </div>
+    {% if message %}
+    <div class="row justify-content-center">
+        <div class="col-12">
+            <p class="text-center">{{ message|safe }}</p>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}

@@ -1,0 +1,92 @@
+{% macro pagetitle(title) -%}
+<div class="row justify-content-center">
+    <div class="col">
+        <p class="h3 text-center">{{ title }}</p>
+    </div>
+</div>
+{%- endmacro %}
+
+{% macro listanchors(anchors) -%}
+<div class="row justify-content-center">
+    <div class="col">
+        <ul class="list-group list-group-flush">
+            {% for anchor in anchors %}
+            <li class="list-group-item">
+                <a href="{{ anchor.anchor }}">{{ anchor.title }}</a>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{%- endmacro %}
+
+{% macro textitem(name, label) -%}
+<div class="input-group">
+    <span class="input-group-text">{{ label }}</span>
+    <input type="text" name="{{ name }}" class="form-control" required>
+</div>
+{%- endmacro %}
+
+{% macro emailitem(label) -%}
+<div class="input-group">
+    <span class="input-group-text">{{ label }}</span>
+    <input type="email" name="email" required class="form-control">
+</div>
+{%- endmacro %}
+
+{% macro passworditem(label) -%}
+<div class="input-group">
+    <span class="input-group-text">{{ label }}</span>
+    <input type="password" name="password" required class="form-control">
+</div>
+{%- endmacro %}
+
+{% macro submitbutton(label) -%}
+<div class="input-group">
+    <button class="btn btn-primary form-control" name="submit" type="submit">{{ label }}</button>
+</div>
+{%- endmacro %}
+
+{% macro checkboxitem(name, label) -%}
+<div class="form-check">
+    {% if label %}
+    <label>{{ label }}</label>
+    {% endif %}
+    <input class="form-check-input" type="checkbox" name="{{ name }}">
+</div>
+{%- endmacro %}
+
+{% macro radioitem(name, label) -%}
+<div class="form-check form-check-inline">
+    {% if label %}
+    <span class="input-form-text">{{ label }}</span>
+    {% endif %}
+    <input class="form-check-input" type="radio" name="{{ name }}">
+{%- endmacro %}
+
+{%- macro menu(menuitems) %}
+<div class="row my-4 justify-content-center border-top border-bottom" style="background-color: #d5f4e6;">
+    <div class="col">
+        <ul class="list-group list-group-horizontal">
+            {% for item in menuitems %}
+            <li class="list-group-item list-group-item-action">
+                <a href="{{ item.anchor }}">{{ item.title }}</a>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endmacro -%}
+
+# UPLOAD DOCUMENT FORM
+{% macro file_upload(url, message) -%}
+    <form action="{{ url }}" method="POST" enctype="multipart/form-data" onsubmit="submitbutton.disabled=true; return true;">
+        <div class="form-group my-2">
+            <label for="file">{{ message }}</label>
+            <input class="form-control" type="file" id="file" name="file" autocomplete="off" required>
+        </div>
+        <div class="form-group d-grid my-2 text-center">
+            <button class="btn btn-primary mt-3" type="submit" name="submitbutton">Upload</button>
+        </div>
+    </form>
+{%- endmacro %}
