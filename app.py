@@ -3,6 +3,7 @@ from database import get_db
 from datetime import datetime
 from werkzeug.utils import secure_filename
 import os
+import re
 
 app = Flask(__name__)
 upload_folder = 'files'
@@ -104,6 +105,8 @@ def lookup():
 def importfile():
     message = None
     now = datetime.now()
+    valid = []
+    statussummary = { 'validlines': 0, 'totallines': 0 }
     if request.method == "POST":
         file = request.files['file']
         filename = secure_filename(file.filename)
@@ -115,6 +118,78 @@ def importfile():
         fileid = cur.lastrowid
         file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
         message = f'File {filename} uploaded. ID = {fileid}'
+        # check data in file
+        f = open(os.path.join(app.config['UPLOAD_FOLDER'], filename), 'r')
+        lineOK = True
+        linecount = 0
+        validlines = 0
+        # clear the importdata table
+        sql = 'delete from importdata'
+        cur.execute(sql)
+        db.commit()
+        # --------------------------
+        sql = '''
+            insert into importdata (staff, att_date, att_time, att_type, att_dir, att_status, valid) 
+            values (?, ?, ?, ?, ?, ?, ?)    
+        '''
+        sqlValues = []
+        for line in f:
+            sqlValues.clear()
+            lineOK = True
+            linecount += 1
+            line = line.strip().split()
+            if len(line) < 7:
+                lineOK = False
+            else:
+                if line[0] not in ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20']:
+                    lineOK = False
+                dateStr = r'^\d{4}-\d{2}-\d{2}$'
+                if not re.match(dateStr, line[1]):
+                    lineOK = False
+                timeStr = r'^\d{2}:\d{2}:\d{2}$'
+                if not re.match(timeStr, line[2]):
+                    lineOK = False
+                if line[3] not in ['0', '1', '2']:
+                    lineOK = False
+                if line[4] not in ['0', '1', '2']:
+                    lineOK = False
+                if line[5] not in ['0', '1', '2']:
+                    lineOK = False
+                if line[6] not in ['0', '1', '2']:
+                    lineOK = False
+            valid.append({'line': linecount, 'valid': lineOK})
+            sqlValues.append(int(line[0]))
+            sqlValues.append(line[1])
+            sqlValues.append(line[2])
+            sqlValues.append(int(line[3]))
+            sqlValues.append(int(line[4]))
+            sqlValues.append(int(line[5]))
+            sqlValues.append(lineOK)
+            
+            cur.execute(sql, sqlValues)
+            db.commit()
 
-    return render_template('importfile.html', menuitems=get_menu(), message=message)
+        f.close()
+
+        if len(valid) == 0:
+            valid = None
+        else:
+            for item in valid:
+                if item['valid']:
+                    validlines += 1
+            statussummary = { 'validlines': validlines, 'totallines': linecount }
+        sql = 'update fileuploads set totallines = ?, validlines = ? where id = ?'
+        cur.execute(sql, (linecount, validlines, fileid))
+        db.commit()
+
+        # insert lines from importdata to attendance where valid
+        sql = '''
+            insert or ignore into attendance (staff, att_date, att_time, att_type, att_dir, att_status)
+            select staff, att_date, att_time, att_type, att_dir, att_status from importdata
+            where valid = 1
+        '''
+        cur.execute(sql)
+        db.commit()
+
+    return render_template('importfile.html', menuitems=get_menu(), message=message, status=valid, statussummary=statussummary)
 

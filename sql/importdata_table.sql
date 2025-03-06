@@ -11,5 +11,6 @@ create table importdata (
     att_time text not null,
     att_type varchar(1) not null default 'F',
     att_dir int not null,
-    att_status int not null default 0
+    att_status int not null default 0,
+    valid boolean
 );
