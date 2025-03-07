@@ -124,13 +124,13 @@ def importfile():
         linecount = 0
         validlines = 0
         # clear the importdata table
-        sql = 'delete from importdata'
-        cur.execute(sql)
-        db.commit()
+        # sql = 'delete from importdata'
+        # cur.execute(sql)
+        # db.commit()
         # --------------------------
         sql = '''
-            insert into importdata (staff, att_date, att_time, att_type, att_dir, att_status, valid) 
-            values (?, ?, ?, ?, ?, ?, ?)    
+            insert into importdata (fileid, staff, att_date, att_time, att_type, att_dir, att_status, valid) 
+            values (?, ?, ?, ?, ?, ?, ?, ?)    
         '''
         sqlValues = []
         for line in f:
@@ -158,6 +158,7 @@ def importfile():
                 if line[6] not in ['0', '1', '2']:
                     lineOK = False
             valid.append({'line': linecount, 'valid': lineOK})
+            sqlValues.append(fileid)
             sqlValues.append(int(line[0]))
             sqlValues.append(line[1])
             sqlValues.append(line[2])
@@ -183,13 +184,14 @@ def importfile():
         db.commit()
 
         # insert lines from importdata to attendance where valid
-        sql = '''
-            insert or ignore into attendance (staff, att_date, att_time, att_type, att_dir, att_status)
-            select staff, att_date, att_time, att_type, att_dir, att_status from importdata
-            where valid = 1
-        '''
-        cur.execute(sql)
-        db.commit()
+        if valid:
+            sql = '''
+                insert or ignore into attendance (staff, att_date, att_time, att_type, att_dir, att_status)
+                select staff, att_date, att_time, att_type, att_dir, att_status from importdata
+                where valid = 1 and fileid = ?
+            '''
+            cur.execute(sql, (fileid,))
+            db.commit()
 
     return render_template('importfile.html', menuitems=get_menu(), message=message, status=valid, statussummary=statussummary)
 

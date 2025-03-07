@@ -6,6 +6,7 @@ drop table if exists importdata;
 
 create table importdata (
     id integer primary key autoincrement,
+    fileid integer not null references fileuploads (id),
     staff integer not null,
     att_date text not null,
     att_time text not null,
