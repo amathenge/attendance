@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% from 'utils.j2' import menu %}
+
+{% block title %}Attendance Report{% endblock %}
+
+{% block heading %}Attendance Report - List Files{% endblock %}
+
+{% block content %}
+{{ menu(menuitems) }}
+<div class="row justify-content-center">
+    <div class="col justify-content-center">
+        {% if files %}
+        <table class="table table-striped">
+            <tr>
+                <th scope="col">ID</th>
+                <th>File Date</th>
+                <th>Filename</th>
+                <th>Delete</th>
+            </tr>
+            {% for row in files %}
+            <tr>
+                <td scope="row">{{ row.id }}</td>
+                <td>{{ row.filedate }}</td>
+                <td>{{ row.filename }}</td>
+                <td><a href="{{ url_for('filedelete', id=row.id) }}"><i class="fa fa-trash"></i></a></td>
+            </tr>
+            {% endfor %}
+        </table>
+        {% else %}
+        <p class="text-center">No Data</p>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}
