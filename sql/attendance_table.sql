@@ -15,3 +15,15 @@ create table attendance (
     unique (staff, att_date, att_time)
 );
 
+drop table if exists original_data;
+
+create table original_data (
+    id integer primary key autoincrement,
+    staff integer not null,
+    att_date text not null,
+    att_time text not null,
+    att_type varchar(1) not null default 'F',
+    att_dir int not null,
+    att_status int not null default 0,
+    unique (staff, att_date, att_time)
+);

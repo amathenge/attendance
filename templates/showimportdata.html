@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% from 'utils.j2' import menu %}
+
+{% block title %}Attendance Report{% endblock %}
+
+{% block scripts %}
+    <script src="https://kit.fontawesome.com/f74df82d77.js" crossorigin="anonymous"></script>
+{% endblock %}
+
+{% block heading %}Attendance Report - Data for file={{ filename }}{% endblock %}
+
+{% block content %}
+{{ menu(menuitems) }}
+<div class="row justify-content-center">
+    <div class="col justify-content-center">
+        {% if data %}
+        <table class="table table-striped">
+            <tr>
+                <th scope="col">ID</th>
+                <th>FileID</th>
+                <th>Staff - ID, Name</th>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Type</th>
+                <th>Dir</th>
+                <th>Status</th>
+                <th>Valid</th>
+            </tr>
+            {% for row in data %}
+            <tr>
+                <td scope="row">{{ row.id }}</a></td>
+                <td>{{ row.fileid }}</td>
+                <td>{{ row.staff}}&nbsp;-&nbsp;{{ row.fullname }}</td>
+                <td>{{ row.att_date }}</td>
+                <td>{{ row.att_time }}</td>
+                <td>{{ row.att_type }}</td>
+                <td>{{ row.att_dir }}</td>
+                <td>{{ row.att_status }}</td>
+                <td>{{ row.valid }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+        {% else %}
+        <p class="text-center">No Data</p>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

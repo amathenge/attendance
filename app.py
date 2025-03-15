@@ -4,6 +4,7 @@ from datetime import datetime
 from werkzeug.utils import secure_filename
 import os
 import re
+from cleanup import cleanup_import
 
 app = Flask(__name__)
 upload_folder = 'files'
@@ -21,8 +22,10 @@ def get_menu():
     menuitems = [
         { 'anchor': url_for('home'), 'title': 'HOME' },
         { 'anchor': url_for('lookup'), 'title': 'LOOKUP' },
+        { 'anchor': url_for('timereport'), 'title': 'TIME REPORT' },
         { 'anchor': url_for('importfile'), 'title': 'IMPORT FILE' },
-        { 'anchor': url_for('listfiles'), 'title': 'LIST FILES' }
+        { 'anchor': url_for('listfiles'), 'title': 'LIST FILES' },
+        { 'anchor': url_for('lookup_original'), 'title': 'RAW DATA' }
     ]
 
     return menuitems
@@ -202,6 +205,18 @@ def importfile():
                 cur.execute(sql, (fileid,))
                 db.commit()
 
+                sql = '''
+                    insert or ignore into original_data (staff, att_date, att_time, att_type, att_dir, att_status)
+                    select staff, att_date, att_time, att_type, att_dir, att_status from importdata
+                    where valid = 1 and fileid = ?
+                '''
+                cur.execute(sql, (fileid,))
+                db.commit()
+                
+
+            # call the cleanup module to get rid of duplicates.
+            cleanup_import()
+
     return render_template('importfile.html', menuitems=get_menu(), message=message, status=valid, statussummary=statussummary)
 
 
@@ -209,7 +224,7 @@ def importfile():
 def listfiles():
     db = get_db()
     cur = db.cursor()
-    sql = 'select id, filedate, filename from fileuploads'
+    sql = 'select id, filedate, filename from fileuploads order by id desc'
     cur.execute(sql)
     data= cur.fetchall()
     if len(data) == 0:
@@ -218,7 +233,7 @@ def listfiles():
     return render_template('listfiles.html', menuitems=get_menu(), files=data)
 
 @app.route('/filedelete/<fid>')
-def fildelete(fid):
+def filedelete(fid):
     db = get_db()
     cur = db.cursor()
     # check if file actually exists
@@ -237,3 +252,166 @@ def fildelete(fid):
     sql = 'delete from fileuploads where id = ?'
     cur.execute(sql, (fid,))
     db.commit()
+
+    return redirect(request.referrer)
+
+
+@app.route('/showimportdata/<fid>')
+def showimportdata(fid):
+    db = get_db()
+    cur = db.cursor()
+    sql = 'select filename from fileuploads where id = ?'
+    cur.execute(sql, (fid,))
+    filename = cur.fetchone()
+    if filename is None:
+        return redirect(request.referrer)
+    filename = filename['filename']
+    sql = '''
+        select f.id, f.fileid, f.staff, s.firstname || ' ' || s.lastname as fullname, f.att_date, f.att_time, 
+        f.att_type, f.att_dir, f.att_status, f.valid
+        from importdata f join staff s on (f.staff = s.id) where fileid = ?
+    '''
+    cur.execute(sql, (fid,))
+    data = cur.fetchall()
+    if len(data) == 0:
+        data = None
+
+    return render_template('showimportdata.html', menuitems=get_menu(), data=data, filename=filename)
+
+@app.route('/timereport', methods=['GET', 'POST'])
+def timereport():
+    staff = None
+    data = None
+    stafflist = None
+    message = None
+    db = get_db()
+    cur = db.cursor()
+    if request.method == "POST":
+        data = []
+        staff = request.form['selectstaff']
+        sql = "select id, firstname || ' ' || lastname as fullname from staff where id = ?"
+        cur.execute(sql, (staff,))
+        staff = cur.fetchone()
+
+        staffid = staff['id']
+
+        # print(f"id={staffid}, {staff['fullname']}")
+        sql = 'select distinct(att_date) from attendance where staff = ? order by id desc'
+        cur.execute(sql, (staffid,))
+        records = cur.fetchall()
+
+        for record in records:
+            temp = {'att_date': record['att_date']}
+            # print(f"{record['att_date']}: ", end='')
+            sql = 'select id, att_time from attendance where staff = ? and att_date = ? order by id asc'
+            cur.execute(sql, (staffid,record['att_date']))
+            clocks = cur.fetchall()
+            
+            if len(clocks) == 2:
+                start_time = clocks[0]['att_time']
+                end_time = clocks[1]['att_time']
+                temp['start_time'] = start_time
+                temp['end_time'] = end_time
+                # print(f"From {start_time} To {end_time} = ", end='')
+            elif len(clocks) == 1:
+                temp['start_time'] = clocks[0]['att_time']
+                temp['end_time'] = '-'
+                message = 'Inconsistent data'
+            else:
+                temp['start_time'] = '-'
+                temp['end_time'] = '-'
+                message = 'Inconsistent data'
+
+            #     print(f"Inconsistent clocking data - Clocks = {len(clocks)}")
+
+            if len(clocks) == 2:
+                clock_start = datetime.strptime(start_time, '%H:%M:%S')
+                clock_end = datetime.strptime(end_time, '%H:%M:%S')
+                difference = clock_end - clock_start
+                difference_secs = difference.total_seconds()
+                if difference_secs >= 60:
+                    difference_mins = (difference_secs - (difference_secs % 60)) / 60
+                    difference_secs = difference_secs % 60
+                else:
+                    difference_mins = 0
+                if difference_mins >= 60:
+                    difference_hours = (difference_mins - (difference_mins % 60)) / 60
+                    difference_mins = difference_mins % 60
+                else:
+                    difference_hours = 0
+                difference_secs = int(difference_secs)
+                difference_mins = int(difference_mins)
+                difference_hours = int(difference_hours)
+                temp['work_hours'] = f"{difference_hours:02d}H {difference_mins:02d}M {difference_secs:02d}S"
+                # print(f"{difference_hours:02d} H {difference_mins:02d} M {difference_secs:02d} S")
+            else:
+                temp['work_hours'] = '-'
+                message = 'Inconsistent data'
+            if message:
+                temp['message'] = message
+            else:
+                temp['message'] = ''
+            # data goes here
+            data.append(temp.copy())
+            temp = {}
+            message = None
+
+    sql = '''
+        select id, firstname, lastname from staff
+    '''
+    cur.execute(sql)
+    stafflist = cur.fetchall()
+    return render_template('timereport.html', stafflist=stafflist, data=data, menuitems=get_menu(), staff=staff, message=message)
+
+@app.route('/lookup_original', methods=['GET', 'POST'])
+def lookup_original():
+    staff = None
+    data = None
+    stafflist = None
+    db = get_db()
+    cur = db.cursor()
+    if request.method == 'POST':
+        staff = request.form['selectstaff']
+        sql = 'select id, firstname, lastname from staff where id = ?'
+        cur.execute(sql, (staff,))
+        staff = cur.fetchone()
+        if staff:
+            sql = '''select 
+                case cast (strftime('%m', att_date) as integer) 
+                    when 1 then 'January'
+                    when 2 then 'February'
+                    when 3 then 'March'
+                    when 4 then 'April'
+                    when 5 then 'May'
+                    when 6 then 'June'
+                    when 7 then 'July'
+                    when 8 then 'August'
+                    when 9 then 'September'
+                    when 10 then 'October'
+                    when 11 then 'November'
+                    else 'December' 
+                end as themonth,
+                case cast (strftime('%w', att_date) as integer) 
+                    when 0 then 'Sunday'
+                    when 1 then 'Monday'
+                    when 2 then 'Tuesday'
+                    when 3 then 'Wednesday'
+                    when 4 then 'Thursday'
+                    when 5 then 'Friday'
+                    else 'Saturday' 
+                end as day,
+                strftime('%d', att_date) as daynumber,
+                strftime('%Y', att_date) as theyear,
+                cast (strftime('%w', att_date) as integer) as weekday,
+                att_date, att_time from original_data where staff = ?
+                order by id desc
+            '''
+            cur.execute(sql, (staff['id'],))
+            data = cur.fetchall()                
+
+    sql = '''
+        select id, firstname, lastname from staff
+    '''
+    cur.execute(sql)
+    stafflist = cur.fetchall()
+    return render_template('original_data.html', stafflist=stafflist, data=data, menuitems=get_menu(), staff=staff)

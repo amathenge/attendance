@@ -3,6 +3,10 @@
 
 {% block title %}Attendance Report{% endblock %}
 
+{% block scripts %}
+    <script src="https://kit.fontawesome.com/f74df82d77.js" crossorigin="anonymous"></script>
+{% endblock %}
+
 {% block heading %}Attendance Report - List Files{% endblock %}
 
 {% block content %}
@@ -19,10 +23,10 @@
             </tr>
             {% for row in files %}
             <tr>
-                <td scope="row">{{ row.id }}</td>
+                <td scope="row"><a href="{{ url_for('showimportdata', fid=row.id) }}">{{ row.id }}</a></td>
                 <td>{{ row.filedate }}</td>
                 <td>{{ row.filename }}</td>
-                <td><a href="{{ url_for('filedelete', id=row.id) }}"><i class="fa fa-trash"></i></a></td>
+                <td><a href="{{ url_for('filedelete', fid=row.id) }}"><i class="fa fa-trash"></i></a></td>
             </tr>
             {% endfor %}
         </table>
