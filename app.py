@@ -1,12 +1,15 @@
-from flask import Flask, render_template, url_for, g, request, redirect
+from flask import Flask, render_template, url_for, g, request, redirect, Blueprint, session
 from database import get_db
 from datetime import datetime
 from werkzeug.utils import secure_filename
 import os
 import re
 from cleanup import cleanup_import
+from auth.auth import auth
 
 app = Flask(__name__)
+app.register_blueprint(auth, url_prefix="/auth")
+app.config['SECRET_KEY'] = os.urandom(24)
 upload_folder = 'files'
 app.config['UPLOAD_FOLDER'] = upload_folder
 # max file size to upload is 10 MB
@@ -25,13 +28,23 @@ def get_menu():
         { 'anchor': url_for('timereport'), 'title': 'TIME REPORT' },
         { 'anchor': url_for('importfile'), 'title': 'IMPORT FILE' },
         { 'anchor': url_for('listfiles'), 'title': 'LIST FILES' },
-        { 'anchor': url_for('lookup_original'), 'title': 'RAW DATA' }
+        { 'anchor': url_for('lookup_original'), 'title': 'RAW DATA' },
+        { 'anchor': url_for('auth.logout'), 'title': 'LOGOUT' }
     ]
 
     return menuitems
 
+def logged_in():
+    if 'user' not in session or not session['user']['otp']:
+        return False
+
+    return True
+
 @app.route('/')
 def home():
+    if not logged_in():
+        return redirect(url_for('auth.login'))
+    
     now = datetime.now()
 
     db = get_db()
@@ -54,6 +67,9 @@ def home():
 
 @app.route('/lookup', methods=['GET', 'POST'])
 def lookup():
+    if not logged_in():
+        return redirect(url_for('auth.login'))
+    
     staff = None
     data = None
     stafflist = None
@@ -107,6 +123,9 @@ def lookup():
 
 @app.route('/importfile', methods=['GET', 'POST'])
 def importfile():
+    if not logged_in():
+        return redirect(url_for('auth.login'))
+    
     message = None
     now = datetime.now()
     valid = []
@@ -222,6 +241,9 @@ def importfile():
 
 @app.route('/listfiles', methods=['GET', 'POST'])
 def listfiles():
+    if not logged_in():
+        return redirect(url_for('auth.login'))
+    
     db = get_db()
     cur = db.cursor()
     sql = 'select id, filedate, filename from fileuploads order by id desc'
@@ -234,6 +256,9 @@ def listfiles():
 
 @app.route('/filedelete/<fid>')
 def filedelete(fid):
+    if not logged_in():
+        return redirect(url_for('auth.login'))
+    
     db = get_db()
     cur = db.cursor()
     # check if file actually exists
@@ -258,6 +283,9 @@ def filedelete(fid):
 
 @app.route('/showimportdata/<fid>')
 def showimportdata(fid):
+    if not logged_in():
+        return redirect(url_for('auth.login'))
+    
     db = get_db()
     cur = db.cursor()
     sql = 'select filename from fileuploads where id = ?'
@@ -280,6 +308,9 @@ def showimportdata(fid):
 
 @app.route('/timereport', methods=['GET', 'POST'])
 def timereport():
+    if not logged_in():
+        return redirect(url_for('auth.login'))
+    
     staff = None
     data = None
     stafflist = None
@@ -365,6 +396,9 @@ def timereport():
 
 @app.route('/lookup_original', methods=['GET', 'POST'])
 def lookup_original():
+    if not logged_in():
+        return redirect(url_for('auth.login'))
+    
     staff = None
     data = None
     stafflist = None

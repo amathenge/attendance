@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% from 'utils.j2' import otplogin %}
+{% block title %}&nbsp;{% endblock %}
+
+{% block heading %}Attendance - Request OTP{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-4">
+            {{ otplogin(url_for('auth.otplogin')) }}
+        </div>
+    </div>
+    {% if message %}
+    <div class="row justify-content-center">
+        <div class="col-12 border d-flex justify-content-center"><strong>{{ message }}</strong></div>
+    </div>
+    {% endif %}
+</div>
+
+
+
+
+
+{% endblock %}

@@ -1,0 +1,1 @@
+# stub for module auth

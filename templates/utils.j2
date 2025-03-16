@@ -90,3 +90,49 @@
         </div>
     </form>
 {%- endmacro %}
+
+# LOGIN FORM
+{% macro login(url) -%} 
+    <form action="{{ url }}" method="POST" onsubmit="submitpassword.disabled=true; return true;">
+        <div class="form-group my-2">
+            <label for="email">Email</label> 
+            <input class="form-control" type="text" id="email" name="email" maxlength="32" required>
+        </div> 
+        <div class="form-group my-2">
+            <label for="password">Password</label>
+            <input class="form-control" type="password" id="password" name="password" maxlength="32">
+        </div>
+        <div class="form-group d-grid my-2 text-center"> 
+            <button class="btn btn-primary mt-3" type="submit" name="submitpassword" id="submitpassword" on>Login with Password</button>
+        </div>
+    </form>
+    <div class="d-grid my-5 text-center"> 
+        <a class="btn btn-primary" href="{{ url_for('auth.otplogin') }}">Use OTP Login</a>
+    </div>
+{%- endmacro %}
+
+# LOGIN FORM
+{% macro otplogin(url) -%} 
+    <form action="{{ url }}" method="POST" onsubmit="submitemail.disabled=true; return true;">
+        <div class="form-group my-2">
+            <label for="email">Account Email</label> 
+            <input class="form-control" type="text" id="email" name="email" maxlength="32" required>
+        </div> 
+        <div class="form-group d-grid my-2 text-center"> 
+            <button class="btn btn-primary mt-3" type="submit" name="submitemail" id="submitemail" on>Submit Email</button>
+        </div>
+    </form>
+{%- endmacro %}
+
+# ONE_TIME FORM
+{% macro one_time(url) -%}
+    <form action="{{ url }}" method="POST" onsubmit="submitbutton.disabled=true; return true;">
+        <div class="form-group my-2">
+            <label for="otp">Please Enter PIN</label>
+            <input class="form-control" type="text" id="otp" name="otp" maxlength="8" required>
+        </div>
+        <div class="form-group d-grid my-2 text-center">
+            <button class="btn btn-primary mt-3" type="submit" name="submitbutton">Send Code</button>
+        </div>
+    </form>
+{%- endmacro %}
