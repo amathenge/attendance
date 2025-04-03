@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% from 'utils.j2' import menu %}
+
+{% block title %}Attendance Report{% endblock %}
+
+{% block scripts %}
+    <script src="https://kit.fontawesome.com/f74df82d77.js" crossorigin="anonymous"></script>
+{% endblock %}
+
+{% block heading %}Attendance Report - List Reports{% endblock %}
+
+{% block content %}
+{{ menu(menuitems) }}
+<div class="row justify-content-center">
+    <div class="col justify-content-center">
+        {% if reports %}
+        <table class="table table-striped">
+            <tr>
+                <th scope="col">ID</th>
+                <th>Staff ID</th>
+                <th>Report Date</th>
+                <th>Report Name</th>
+                <th>Download</th>
+                <th>Delete</th>
+            </tr>
+            {% for row in reports %}
+            <tr>
+                <td scope="row">{{ row.id }}</td>
+                <td>{{ row.staff }}</td>
+                <td>{{ row.filedate }}</td>
+                <td>{{ row.filename }}</td>
+                <td><a href="{{ url_for('reportdownload', rid=row.id) }}"><i class="fa fa-download"></i></a></td>
+                <td><a href="{{ url_for('reportdelete', rid=row.id) }}"><i class="fa fa-trash"></i></a></td>
+            </tr>
+            {% endfor %}
+        </table>
+        {% else %}
+        <p class="text-center">No Data</p>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

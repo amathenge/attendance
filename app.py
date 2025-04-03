@@ -1,4 +1,4 @@
-from flask import Flask, render_template, url_for, g, request, redirect, Blueprint, session
+from flask import Flask, render_template, url_for, g, request, redirect, Blueprint, session, send_file
 from database import get_db
 from datetime import datetime
 from werkzeug.utils import secure_filename
@@ -12,6 +12,8 @@ app.register_blueprint(auth, url_prefix="/auth")
 app.config['SECRET_KEY'] = os.urandom(24)
 upload_folder = 'files'
 app.config['UPLOAD_FOLDER'] = upload_folder
+report_folder = 'reports'
+app.config['REPORT_FOLDER'] = report_folder
 # max file size to upload is 10 MB
 app.config['MAX_CONTENT_PATH'] = 10 * 1024 * 1024
 
@@ -28,6 +30,7 @@ def get_menu():
         { 'anchor': url_for('timereport'), 'title': 'TIME REPORT' },
         { 'anchor': url_for('importfile'), 'title': 'IMPORT FILE' },
         { 'anchor': url_for('listfiles'), 'title': 'LIST FILES' },
+        { 'anchor': url_for('listreports'), 'title': 'LIST REPORTS' },
         { 'anchor': url_for('lookup_original'), 'title': 'RAW DATA' },
         { 'anchor': url_for('auth.logout'), 'title': 'LOGOUT' }
     ]
@@ -333,6 +336,8 @@ def timereport():
 
         for record in records:
             temp = {'att_date': record['att_date']}
+            dayofweek = datetime.strptime(record['att_date'], '%Y-%m-%d').strftime('%A')
+            temp['dayofweek'] = dayofweek
             # print(f"{record['att_date']}: ", end='')
             sql = 'select id, att_time from attendance where staff = ? and att_date = ? order by id asc'
             cur.execute(sql, (staffid,record['att_date']))
@@ -386,6 +391,20 @@ def timereport():
             data.append(temp.copy())
             temp = {}
             message = None
+
+        # save to database
+        sql = 'delete from reports where staff = ?'
+        cur.execute(sql, (staffid,))
+        db.commit()
+        sql = '''
+            insert into reports (staff, att_date, dayofweek, start_time, end_time, work_hours, message)
+            values (?, ?, ?, ?, ?, ?, ?)
+        '''
+        for item in data:
+            cur.execute(sql, (staffid, item['att_date'], item['dayofweek'], item['start_time'], item['end_time'],
+                              item['work_hours'], item['message']))
+            db.commit()
+
 
     sql = '''
         select id, firstname, lastname from staff
@@ -449,3 +468,88 @@ def lookup_original():
     cur.execute(sql)
     stafflist = cur.fetchall()
     return render_template('original_data.html', stafflist=stafflist, data=data, menuitems=get_menu(), staff=staff)
+
+@app.route('/exportdata/<uid>', methods=['GET', 'POST'])
+def exportdata(uid):
+    db = get_db()
+    cur = db.cursor()
+    sql = '''
+        select id, staff, att_date, dayofweek, start_time, end_time, work_hours, message
+        from reports where staff = ?
+    '''
+    cur.execute(sql, (uid,))
+    data = cur.fetchall()
+    if len(data) == 0:
+        data = None
+    if data:
+        sql = "select id, firstname || ' ' || lastname as fullname from staff where id = ?"
+        cur.execute(sql, (uid,))
+        staff = cur.fetchone()
+        now = datetime.now().strftime('%d%b%Y').upper()
+        # should look for an exception here, but will just continue.
+        filename = f"Attendance_{staff['fullname']}_{now}" + ".csv"
+        f = open(os.path.join(app.config['REPORT_FOLDER'],filename), 'w')
+        for row in data:
+            temp = datetime.strptime(row['att_date'],'%Y-%m-%d')
+            temp = datetime.strftime(temp, '%d%b%Y').upper()
+            output = str(row['id'])+','+str(row['staff'])+','+temp+','+row['dayofweek']
+            output += ','+row['start_time']+','+row['end_time']+','+row['work_hours']+','+row['message']
+            f.write(output+'\n')
+        f.close()
+        message = f"Report written to file {filename}"
+        sql = 'insert into reportlist (staff, filedate, filename) values (?, ?, ?)'
+        cur.execute(sql, (staff['id'], now, filename))
+        db.commit()
+    else:
+        message = f"Unable to create report for staff id={uid}"
+
+    return render_template('reportresult.html', message=message, menuitems=get_menu())
+
+@app.route('/listreports')
+def listreports():
+    db = get_db()
+    cur = db.cursor()
+    sql = 'select id, staff, filedate, filename from reportlist'
+    cur.execute(sql)
+    data = cur.fetchall()
+    if len(data) == 0:
+        data = None
+    
+    return render_template('listreports.html', reports=data, menuitems=get_menu())
+
+
+@app.route('/reportdownload/<rid>', methods=['GET', 'POST'])
+def reportdownload(rid):
+    db = get_db()
+    cur = db.cursor()
+    sql = 'select filename from reportlist where id = ?'
+    cur.execute(sql, (rid,))
+    data = cur.fetchone()
+    if data is None:
+        return render_template('reportresult.html', message=f"File with id={rid} does not exist")
+    if os.path.exists(os.path.join(app.config['REPORT_FOLDER'],data['filename'])):
+        return send_file(os.path.join(app.config['REPORT_FOLDER'],data['filename']), as_attachment=True)
+
+    message = f"Download of {data['filename']} completed"
+    return render_template('reportresult.html', message=message, menuitems=get_menu())
+
+@app.route('/reportdelete/<rid>', methods=['GET', 'POST'])
+def reportdelete(rid):
+    db = get_db()
+    cur = db.cursor()
+    sql = 'select filename from reportlist where id = ?'
+    cur.execute(sql,(rid,))
+    data = cur.fetchone()
+    if data is None:
+        # file does not exist
+        return render_template('reportresult.html', message=f"File with id={rid} does not exist")
+    # delete file from filesystem
+    if os.path.exists(os.path.join(app.config['REPORT_FOLDER'],data['filename'])):
+        os.remove(os.path.join(app.config['REPORT_FOLDER'],data['filename']))
+    # delete file from entry
+    sql = 'delete from reportlist where id = ?'
+    cur.execute(sql, (rid,))
+    db.commit()
+    message = f"File {data['filename']} deleted"
+    return render_template('reportresult.html', message=message, menuitems=get_menu())
+    

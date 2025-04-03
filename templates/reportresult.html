@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% from 'utils.j2' import menu %}
+
+{% block title %}Report Results{% endblock %}
+
+{% block heading %}Report Results{% endblock %}
+
+{% block content %}
+{{ menu(menuitems) }}
+<div class="row justify-content-center my-5">
+    <div class="col justify-content-center">
+        <p class="text-center fw-bold">{{ message }}</p>
+    </div>
+</div>
+<div class="row justify-content-center my-5">
+    <div class="col">
+        <p class="text-center">Select <a href="{{ url_for('listreports') }}">LIST REPORTS</a> to see
+            a list of all reports.</p>
+    </div>
+</div>
+{% endblock %}

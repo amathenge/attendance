@@ -23,9 +23,14 @@
     </div>
 </form>
 {% if staff %}
-<div class="row justify-content-center">
-    <div class="col">
-        <p class="text-center">Selected id={{ staff.id }}, name={{ staff.fullname }}</p>
+<div class="row justify-content-center border border-primary my-3 p-3">
+    <div class="col-4 justify-content-center">
+        <p class="text-end align-self-center">Selected id={{ staff.id }}, name={{ staff.fullname }}</p>
+    </div>
+    <div class="col-4 d-grid justify-content-start">
+        <form action="{{ url_for('exportdata', uid=staff.id) }}" method="POST">
+            <button class="btn btn-primary" type="submit">Export Data</button>
+        </form>
     </div>
 </div>
 {% endif %}
@@ -36,6 +41,7 @@
             <tr>
                 <th scope="col">No.</th>
                 <th>Date</th>
+                <th>Day of Week</th>
                 <th>Start Time</th>
                 <th>End Time</th>
                 <th>Work Hours</th>
@@ -45,6 +51,7 @@
             <tr>
                 <td scope="row">{{ loop.index }}</td>
                 <td>{{ row['att_date'] }}</td>
+                <td>{{ row['dayofweek'] }}</td>
                 <td>{{ row['start_time'] }}</td>
                 <td>{{ row['end_time'] }}</td>
                 <td>{{ row['work_hours'] }}</td>

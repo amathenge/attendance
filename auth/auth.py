@@ -6,6 +6,8 @@ from sendEmail import send_otp_email
 
 auth = Blueprint("auth", __name__, static_folder="static", template_folder="templates")
 
+DEBUGGING = False
+
 @auth.route('/', methods=['GET', 'POST'])
 def login():
     if "user" in session and session["user"]["otp"]:
@@ -14,7 +16,30 @@ def login():
     now = datetime.now()
     now_string = now.strftime('%d%b%Y %H:%M:%S').upper()
     message = None
+# -----------------
+# debugging - enable this code
+# -----------------
+# create a dummy session and go to the home page.
+    if DEBUGGING:
+        user = {
+            'id': 0,
+            'firstname': 'debug',
+            'lastname': 'debug',
+            'email': 'email@debug.com',
+            'phone': '254000000000',
+            'passauth': None,
+            'tfaauth': None,
+            'auth': (1,),
+            'locked': False,
+            'lastlogin': now_string,
+            'otp': 123456
+        }
+        session['user'] = user
+        session.modified = True
+        return redirect(url_for('home'))
 
+# END OF DEBUGGING
+# ------------------
     if request.method == 'POST':
         email = request.form['email']
         password = request.form['password']
