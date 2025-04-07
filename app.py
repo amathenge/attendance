@@ -326,7 +326,9 @@ def timereport():
         sql = "select id, firstname || ' ' || lastname as fullname from staff where id = ?"
         cur.execute(sql, (staff,))
         staff = cur.fetchone()
-
+        if staff is None:
+            return redirect(request.referrer)
+        
         staffid = staff['id']
 
         # print(f"id={staffid}, {staff['fullname']}")
