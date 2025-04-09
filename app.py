@@ -555,3 +555,14 @@ def reportdelete(rid):
     message = f"File {data['filename']} deleted"
     return render_template('reportresult.html', message=message, menuitems=get_menu())
     
+
+@app.route('/adjustment', methods=['GET', 'POST'])
+def adjustment():
+    db = get_db()
+    cur = db.cursor()
+
+    if request.method == 'POST':
+        # handle saving to the database.
+        staff = request.form.get('staff')
+        att_date = request.form.get('att_date')
+        clock_dir = request.form.get('clock_dir')
