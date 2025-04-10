@@ -10,7 +10,11 @@
 {% block heading %}Attendance Report - Data for file={{ filename }}{% endblock %}
 
 {% block content %}
-{{ menu(menuitems) }}
+<div class="row justify-content-center my-2">
+    <div class="col">
+    {{ menu(menuitems) }}
+    </div>
+</div>
 <div class="row justify-content-center">
     <div class="col justify-content-center">
         {% if data %}

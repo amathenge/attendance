@@ -28,6 +28,7 @@ def get_menu():
         { 'anchor': url_for('home'), 'title': 'HOME' },
         { 'anchor': url_for('lookup'), 'title': 'LOOKUP' },
         { 'anchor': url_for('timereport'), 'title': 'TIME REPORT' },
+        { 'anchor': url_for('adjustment'), 'title': 'MANUAL ENTRY' },
         { 'anchor': url_for('importfile'), 'title': 'IMPORT FILE' },
         { 'anchor': url_for('listfiles'), 'title': 'LIST FILES' },
         { 'anchor': url_for('listreports'), 'title': 'LIST REPORTS' },

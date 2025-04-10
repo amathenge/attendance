@@ -6,7 +6,11 @@
 {% block heading %}Lookup Staff Member{% endblock %}
 
 {% block content %}
-{{ menu(menuitems) }}
+<div class="row justify-content-center my-2">
+    <div class="col">
+    {{ menu(menuitems) }}
+    </div>
+</div>
 <form action="{{ url_for('lookup') }}" method="POST">
     <div class="row justify-content-center">
         <div class="col">

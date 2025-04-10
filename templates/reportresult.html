@@ -6,7 +6,11 @@
 {% block heading %}Report Results{% endblock %}
 
 {% block content %}
-{{ menu(menuitems) }}
+<div class="row justify-content-center my-2">
+    <div class="col">
+    {{ menu(menuitems) }}
+    </div>
+</div>
 <div class="row justify-content-center my-5">
     <div class="col justify-content-center">
         <p class="text-center fw-bold">{{ message }}</p>
