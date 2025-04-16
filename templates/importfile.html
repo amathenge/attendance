@@ -1,9 +1,11 @@
 {% extends 'base.html' %}
-{% from 'utils.j2' import menu, file_upload %}
+{% from 'utils.j2' import nav, file_upload %}
 
 {% block title %}&nbsp;{% endblock %}
 
 {% block heading %}Attendance File Upload{% endblock %}
+
+{% set user = session['user'] %}
 
 {% block content %}
 
@@ -12,7 +14,7 @@
 <div class="container">
     <div class="row justify-content-center my-2">
         <div class="col">
-            {{ menu(menuitems) }}
+            {{ nav(user) }}
         </div>
     </div>
     <div class="row justify-content-center">

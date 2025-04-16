@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+{% from 'utils.j2' import nav, submitbutton, cancelbutton %}
+
+{% block title %}Edit an attendance record{% endblock %}
+{% block heading %}Edit an attendance record{% endblock %}
+
+{% set user = session['user'] %}
+
+{% block content %}
+<div class="row justify-content-center my-4">
+    <div class="col">
+        {{ nav(user) }}
+    </div>
+</div>
+
+{% if att_record %}
+<div class="row justify-content-center">
+    <div class="col">
+        {% if staff %}
+        <p class="text-center h5">Attendance for <strong>{{ staff.firstname }}&nbsp;{{ staff.lastname }}</strong></p>
+        {% else %}
+        <p class="text-center h5">Cannot find person with ID = {{ data[0].id }}</p>
+        {% endif %}
+    </div>
+</div>
+<form action="{{ url_for('save_item') }}" method="POST">
+    <div class="row justify-content-center">
+        <div class="col">
+            <p class="text-center">Editing Attendance Record</p>
+            <table class="table table-striped">
+                <tr>
+                    <th scope="col">ID</th>
+                    <th>Staff ID</th>
+                    <th>DATE</th>
+                    <th>Clock&nbsp;-&nbsp;IN<br />(HH:MM)</th>
+                    <th>Clock&nbsp;-&nbsp;OUT<br />(HH:MM)</th>
+                    <th>Notes</th>
+                </tr>
+                <tr>
+                    <td>{{ att_record[0].id }}</td>
+                    <td>
+                        <div class="input-group">
+                            <input type="text" name="staff" class="form-control" value="{{ att_record[0].staff }}" size="5" readonly>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="input-group">
+                            <input type="text" name="att_date" class="form-control" value="{{ att_record[0].att_date|to_date('%d') }}{{ att_record[0].att_date|to_date('%b')|upper }}{{ att_record[0].att_date|to_date('%Y') }}" size="10" readonly>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="input-group">
+                            <select class="form-select" name="clock_in_hour">
+                                <option value="00" {% if clock_data.clock_in_hour == "00" %}selected{% endif %}>00</option>
+                                <option value="01" {% if clock_data.clock_in_hour == "01" %}selected{% endif %}>01</option>
+                                <option value="02" {% if clock_data.clock_in_hour == "02" %}selected{% endif %}>02</option>
+                                <option value="03" {% if clock_data.clock_in_hour == "03" %}selected{% endif %}>03</option>
+                                <option value="04" {% if clock_data.clock_in_hour == "04" %}selected{% endif %}>04</option>
+                                <option value="05" {% if clock_data.clock_in_hour == "05" %}selected{% endif %}>05</option>
+                                <option value="06" {% if clock_data.clock_in_hour == "06" %}selected{% endif %}>06</option>
+                                <option value="07" {% if clock_data.clock_in_hour == "07" %}selected{% endif %}>07</option>
+                                <option value="08" {% if clock_data.clock_in_hour == "08" %}selected{% endif %}>08</option>
+                                <option value="09" {% if clock_data.clock_in_hour == "09" %}selected{% endif %}>09</option>
+                                <option value="10" {% if clock_data.clock_in_hour == "10" %}selected{% endif %}>10</option>
+                                <option value="11" {% if clock_data.clock_in_hour == "11" %}selected{% endif %}>11</option>
+                                <option value="12" {% if clock_data.clock_in_hour == "12" %}selected{% endif %}>12</option>
+                                <option value="13" {% if clock_data.clock_in_hour == "13" %}selected{% endif %}>13</option>
+                                <option value="14" {% if clock_data.clock_in_hour == "14" %}selected{% endif %}>14</option>
+                                <option value="15" {% if clock_data.clock_in_hour == "15" %}selected{% endif %}>15</option>
+                                <option value="16" {% if clock_data.clock_in_hour == "16" %}selected{% endif %}>16</option>
+                                <option value="17" {% if clock_data.clock_in_hour == "17" %}selected{% endif %}>17</option>
+                                <option value="18" {% if clock_data.clock_in_hour == "18" %}selected{% endif %}>18</option>
+                                <option value="19" {% if clock_data.clock_in_hour == "19" %}selected{% endif %}>19</option>
+                                <option value="20" {% if clock_data.clock_in_hour == "20" %}selected{% endif %}>20</option>
+                                <option value="21" {% if clock_data.clock_in_hour == "21" %}selected{% endif %}>21</option>
+                                <option value="22" {% if clock_data.clock_in_hour == "22" %}selected{% endif %}>22</option>
+                                <option value="23" {% if clock_data.clock_in_hour == "23" %}selected{% endif %}>23</option>
+                            </select>
+                            <span>&nbsp;:&nbsp;</span>
+                            <select class="form-select" name="clock_in_minute">
+                                <option value="00" {% if clock_data.clock_in_minute == "00" %}selected{% endif %}>00</option>
+                                <option value="05" {% if clock_data.clock_in_minute == "05" %}selected{% endif %}>05</option>
+                                <option value="10" {% if clock_data.clock_in_minute == "10" %}selected{% endif %}>10</option>
+                                <option value="15" {% if clock_data.clock_in_minute == "15" %}selected{% endif %}>15</option>
+                                <option value="20" {% if clock_data.clock_in_minute == "20" %}selected{% endif %}>20</option>
+                                <option value="25" {% if clock_data.clock_in_minute == "25" %}selected{% endif %}>25</option>
+                                <option value="30" {% if clock_data.clock_in_minute == "30" %}selected{% endif %}>30</option>
+                                <option value="35" {% if clock_data.clock_in_minute == "35" %}selected{% endif %}>35</option>
+                                <option value="40" {% if clock_data.clock_in_minute == "40" %}selected{% endif %}>40</option>
+                                <option value="45" {% if clock_data.clock_in_minute == "45" %}selected{% endif %}>45</option>
+                                <option value="50" {% if clock_data.clock_in_minute == "50" %}selected{% endif %}>50</option>
+                                <option value="55" {% if clock_data.clock_in_minute == "55" %}selected{% endif %}>55</option>
+                            </select>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="input-group">
+                            <select class="form-select" name="clock_out_hour">
+                                <option value="00" {% if clock_data.clock_out_hour == "00" %}selected{% endif %}>00</option>
+                                <option value="01" {% if clock_data.clock_out_hour == "01" %}selected{% endif %}>01</option>
+                                <option value="02" {% if clock_data.clock_out_hour == "02" %}selected{% endif %}>02</option>
+                                <option value="03" {% if clock_data.clock_out_hour == "03" %}selected{% endif %}>03</option>
+                                <option value="04" {% if clock_data.clock_out_hour == "04" %}selected{% endif %}>04</option>
+                                <option value="05" {% if clock_data.clock_out_hour == "05" %}selected{% endif %}>05</option>
+                                <option value="06" {% if clock_data.clock_out_hour == "06" %}selected{% endif %}>06</option>
+                                <option value="07" {% if clock_data.clock_out_hour == "07" %}selected{% endif %}>07</option>
+                                <option value="08" {% if clock_data.clock_out_hour == "08" %}selected{% endif %}>08</option>
+                                <option value="09" {% if clock_data.clock_out_hour == "09" %}selected{% endif %}>09</option>
+                                <option value="10" {% if clock_data.clock_out_hour == "10" %}selected{% endif %}>10</option>
+                                <option value="11" {% if clock_data.clock_out_hour == "11" %}selected{% endif %}>11</option>
+                                <option value="12" {% if clock_data.clock_out_hour == "12" %}selected{% endif %}>12</option>
+                                <option value="13" {% if clock_data.clock_out_hour == "13" %}selected{% endif %}>13</option>
+                                <option value="14" {% if clock_data.clock_out_hour == "14" %}selected{% endif %}>14</option>
+                                <option value="15" {% if clock_data.clock_out_hour == "15" %}selected{% endif %}>15</option>
+                                <option value="16" {% if clock_data.clock_out_hour == "16" %}selected{% endif %}>16</option>
+                                <option value="17" {% if clock_data.clock_out_hour == "17" %}selected{% endif %}>17</option>
+                                <option value="18" {% if clock_data.clock_out_hour == "18" %}selected{% endif %}>18</option>
+                                <option value="19" {% if clock_data.clock_out_hour == "19" %}selected{% endif %}>19</option>
+                                <option value="20" {% if clock_data.clock_out_hour == "20" %}selected{% endif %}>20</option>
+                                <option value="21" {% if clock_data.clock_out_hour == "21" %}selected{% endif %}>21</option>
+                                <option value="22" {% if clock_data.clock_out_hour == "22" %}selected{% endif %}>22</option>
+                                <option value="23" {% if clock_data.clock_out_hour == "23" %}selected{% endif %}>23</option>
+                            </select>
+                            <span>&nbsp;:&nbsp;</span>
+                            <select class="form-select" name="clock_out_minute">
+                                <option value="00" {% if clock_data.clock_out_minute == "00" %}selected{% endif %}>00</option>
+                                <option value="05" {% if clock_data.clock_out_minute == "05" %}selected{% endif %}>05</option>
+                                <option value="10" {% if clock_data.clock_out_minute == "10" %}selected{% endif %}>10</option>
+                                <option value="15" {% if clock_data.clock_out_minute == "15" %}selected{% endif %}>15</option>
+                                <option value="20" {% if clock_data.clock_out_minute == "20" %}selected{% endif %}>20</option>
+                                <option value="25" {% if clock_data.clock_out_minute == "25" %}selected{% endif %}>25</option>
+                                <option value="30" {% if clock_data.clock_out_minute == "30" %}selected{% endif %}>30</option>
+                                <option value="35" {% if clock_data.clock_out_minute == "35" %}selected{% endif %}>35</option>
+                                <option value="40" {% if clock_data.clock_out_minute == "40" %}selected{% endif %}>40</option>
+                                <option value="45" {% if clock_data.clock_out_minute == "45" %}selected{% endif %}>45</option>
+                                <option value="50" {% if clock_data.clock_out_minute == "50" %}selected{% endif %}>50</option>
+                                <option value="55" {% if clock_data.clock_out_minute == "55" %}selected{% endif %}>55</option>
+                            </select>
+                        </div>
+                    </td>
+                    <td>
+                        <textarea class="form-control" name="notes" rows="3" required></textarea>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    <div class="row justify-content-center my-2">
+        <div class="col-3">
+            {{ submitbutton('Update Attendance') }}
+        </div>
+        <div class="col-3">&nbsp;</div>
+        <div class="col-3">
+            {{ cancelbutton('Cancel') }}
+        </div>
+    </div>
+</form>
+
+{% endif %}
+
+{% endblock %}

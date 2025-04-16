@@ -1,14 +1,16 @@
 {% extends 'base.html' %}
-{% from 'utils.j2' import menu %}
+{% from 'utils.j2' import nav %}
 
 {% block title %}Attendance Report{% endblock %}
 
-{% block heading %}Lookup Staff Member{% endblock %}
+{% block heading %}Time in Office Report for Staff{% endblock %}
+
+{% set user = session['user'] %}
 
 {% block content %}
 <div class="row justify-content-center my-2">
     <div class="col">
-    {{ menu(menuitems) }}
+    {{ nav(user) }}
     </div>
 </div>
 <form action="{{ url_for('timereport') }}" method="POST">
@@ -59,7 +61,7 @@
                 <td>{{ row['start_time'] }}</td>
                 <td>{{ row['end_time'] }}</td>
                 <td>{{ row['work_hours'] }}</td>
-                <td>{{ row['message'] }}</td>
+                <td>{{ row['message']|safe }}</td>
             </tr>
             {% endfor %}
         </table>

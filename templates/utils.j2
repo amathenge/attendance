@@ -47,6 +47,12 @@
 </div>
 {%- endmacro %}
 
+{%- macro cancelbutton(label) %}
+<div class="input-group">
+    <button class="btn btn-primary form-control" type="submit" name="submit" value="cancel" formnovalidate>{{ label }}</button>
+</div>
+{% endmacro -%}
+
 {% macro checkboxitem(name, label) -%}
 <div class="form-check">
     {% if label %}
@@ -135,4 +141,43 @@
             <button class="btn btn-primary mt-3" type="submit" name="submitbutton">Send Code</button>
         </div>
     </form>
+{%- endmacro %}
+
+{# BETTER NAVIGATION - 16APR2025 #}
+{% macro nav(user) -%}
+<nav class="navbar navbar-expand-sm navbar-light bg-light">
+<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav001" aria-controls="nav001" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+</button>      
+<div class="collapse navbar-collapse" id="nav001">
+    <div class="navbar-nav">
+    <a class="nav-item nav-link text-primary" href="{{ url_for('home') }}">Home</a>
+    <li class="nav-item dropdown">
+        <a class="nav-link dropdown-toggle text-primary" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            Lookup Staff
+        </a>
+        <ul class="dropdown-menu" aria-labelledby="navbarDarkDropdownMenuLink">
+            <li><a class="nav-item nav-link text-primary" href="{{ url_for('lookup') }}">Show Cleaned-up Import Data</a></li>
+            <li><a class="nav-item nav-link text-primary" href="{{ url_for('lookup_original') }}">RAW Original Clock Data</a></li>
+        </ul>
+    </li>
+    <a class="nav-item nav-link text-primary" href="{{ url_for('timereport') }}">Hours in Office Report</a>
+    <a class="nav-item nav-link text-primary" href="{{ url_for('listreports') }}">Download Reports</a>
+    <a class="nav-item nav-link text-primary" href="{{ url_for('edit_attendance') }}">Edit Clocking Data</a>
+    <li class="nav-item dropdown">
+        <a class="nav-link dropdown-toggle text-primary" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            File Mgmt
+        </a>
+        <ul class="dropdown-menu" aria-labelledby="navbarDarkDropdownMenuLink">
+            <li><a class="nav-item nav-link text-primary" href="{{ url_for('importfile') }}">IMPORT a File</a></li>
+            <li><a class="nav-item nav-link text-primary" href="{{ url_for('listfiles') }}">LIST Imported Files</a></li>
+        </ul>
+    </li>    
+    </div>
+</div>
+<div class="navbar-nav navbar-right">
+    <span class="nav-item navbar-text fw-light">[{{ user.firstname }}]</span>
+    <a class="nav-item nav-link text-primary" href="{{ url_for('auth.logout') }}">LOGOUT</a>
+</div>
+</nav>
 {%- endmacro %}

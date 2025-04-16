@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% from 'utils.j2' import nav, submitbutton %}
+
+{% block title %}Select Staff to Edit{% endblock %}
+{% block heading %}Select Staff to Edit{% endblock %}
+
+{% set user = session['user'] %}
+
+{% block content %}
+<div class="row justify-content-center my-4">
+    <div class="col">
+        {{ nav(user) }}
+    </div>
+</div>
+
+{% if staff %}
+<form action="{{ url_for('edit_attendance') }}" method="POST">
+<div class="row justify-content-center my-2">
+    <div class="col-6">
+        <select class="form-select" name="selectstaff">
+            {% for item in staff %}
+            <option value="{{ item.id }}">{{ item.firstname }}&nbsp;{{ item.lastname }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-4">
+        {{ submitbutton('Get Attendance') }}
+    </div>
+</div>
+</form>
+{% else %}
+<div class="row justify-content-center">
+    <div class="col-6">
+        <p class="text-center"><strong>No staff in database</strong></p>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

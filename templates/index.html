@@ -1,14 +1,16 @@
 {% extends 'base.html' %}
-{% from 'utils.j2' import menu %}
+{% from 'utils.j2' import nav %}
 
 {% block title %}Attendance Report{% endblock %}
 
 {% block heading %}Attendance Report{% endblock %}
 
+{% set user = session['user'] %}
+
 {% block content %}
 <div class="row justify-content-center my-2">
     <div class="col">
-    {{ menu(menuitems) }}
+    {{ nav(user) }}
     </div>
 </div>
 <div class="row justify-content-center">

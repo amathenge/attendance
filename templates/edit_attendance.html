@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% from 'utils.j2' import nav %}
+
+{% block title %}Edit Attendance{% endblock %}
+{% block heading %}Edit Attendance{% endblock %}
+
+{% set user = session['user'] %}
+
+{% block content %}
+<div class="row justify-content-center my-4">
+    <div class="col">
+        {{ nav(user) }}
+    </div>
+</div>
+
+{% if attendance %}
+<div class="row justify-content-center">
+    <div class="col">
+        {% if staffname %}
+        <p class="text-center h5">Attendance for <strong>{{ staffname.firstname }}&nbsp;{{ staffname.lastname }}</strong> ID={{ staffname.id }}</p>
+        {% else %}
+        <p class="text-center h5">Error Retrieving Staff Data</p>
+        {% endif %}
+    </div>
+</div>
+<div class="row justify-content-center">
+    <div class="col">
+        <table class="table table-striped">
+            <tr>
+                <th scope="col">ID</th>
+                <th>Weekday</th>
+                <th>Date</th>
+                <th>Clock IN</th>
+                <th>Clock OUT</th>
+            </tr>
+            {% for row in attendance %}
+            <tr>
+                <td><a href="{{ url_for('edit_item', sid=staffname.id, did=row.att_date) }}"><i class="fa fa-edit"></i></a></td>
+                <td>{{ row.att_date|to_date('%A') }}</td>
+                <td>{{ row.att_date|to_date('%d') }} {{ row.att_date|to_date('%B') }} {{ row.att_date|to_date('%Y') }}</td>
+                <td>{% if row.clock_in %}{{ row.clock_in }}{% else %}&nbsp;{% endif %}</td>
+                <td>{% if row.clock_out %}{{ row.clock_out }}{% else %}&nbsp;{% endif %}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+</div>
+{% endif %}
+
+
+{% endblock %}

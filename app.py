@@ -2,6 +2,7 @@ from flask import Flask, render_template, url_for, g, request, redirect, Bluepri
 from database import get_db
 from datetime import datetime
 from werkzeug.utils import secure_filename
+import math
 import os
 import re
 from cleanup import cleanup_import
@@ -17,6 +18,8 @@ app.config['REPORT_FOLDER'] = report_folder
 # max file size to upload is 10 MB
 app.config['MAX_CONTENT_PATH'] = 10 * 1024 * 1024
 
+from macros import *
+
 @app.teardown_appcontext
 def close_db(error):
     db = g.pop('attendance_db', None)
@@ -28,7 +31,7 @@ def get_menu():
         { 'anchor': url_for('home'), 'title': 'HOME' },
         { 'anchor': url_for('lookup'), 'title': 'LOOKUP' },
         { 'anchor': url_for('timereport'), 'title': 'TIME REPORT' },
-        { 'anchor': url_for('adjustment'), 'title': 'MANUAL ENTRY' },
+        { 'anchor': url_for('edit_attendance'), 'title': 'MANUAL ENTRY' },
         { 'anchor': url_for('importfile'), 'title': 'IMPORT FILE' },
         { 'anchor': url_for('listfiles'), 'title': 'LIST FILES' },
         { 'anchor': url_for('listreports'), 'title': 'LIST REPORTS' },
@@ -43,6 +46,15 @@ def logged_in():
         return False
 
     return True
+
+
+def n10(item):
+    if int(item[-1]) in (0, 1, 2):
+        return f"{item[0]}0"
+    elif int(item[-1]) in (3, 4, 5, 6, 7):
+        return f"{item[0]}5"
+    else:
+        return f"{int(item[0])+1}0"
 
 @app.route('/')
 def home():
@@ -66,7 +78,7 @@ def home():
     data = cur.fetchall()
     if len(data) == 0:
         data = None
-    return render_template('index.html', data=data, menuitems=get_menu())
+    return render_template('index.html', data=data)
 
 
 @app.route('/lookup', methods=['GET', 'POST'])
@@ -85,37 +97,47 @@ def lookup():
         cur.execute(sql, (staff,))
         staff = cur.fetchone()
         if staff:
-            sql = '''select 
-                case cast (strftime('%m', att_date) as integer) 
-                    when 1 then 'January'
-                    when 2 then 'February'
-                    when 3 then 'March'
-                    when 4 then 'April'
-                    when 5 then 'May'
-                    when 6 then 'June'
-                    when 7 then 'July'
-                    when 8 then 'August'
-                    when 9 then 'September'
-                    when 10 then 'October'
-                    when 11 then 'November'
-                    else 'December' 
-                end as themonth,
-                case cast (strftime('%w', att_date) as integer) 
-                    when 0 then 'Sunday'
-                    when 1 then 'Monday'
-                    when 2 then 'Tuesday'
-                    when 3 then 'Wednesday'
-                    when 4 then 'Thursday'
-                    when 5 then 'Friday'
-                    else 'Saturday' 
-                end as day,
-                strftime('%d', att_date) as daynumber,
-                strftime('%Y', att_date) as theyear,
-                cast (strftime('%w', att_date) as integer) as weekday,
-                att_date, att_time from attendance where staff = ?
-                order by id desc
+            sql = '''
+                select id, att_date, att_time, manual_flag
+                from attendance where staff = ?
+                and att_date not in 
+                (select distinct(att_date) from manual where staff = ?)
+                union
+                select id, att_date, att_time, manual as manual_flag
+                from manual where staff = ?
+                order by att_date desc, id asc
             '''
-            cur.execute(sql, (staff['id'],))
+            # sql = '''select 
+            #     case cast (strftime('%m', att_date) as integer) 
+            #         when 1 then 'January'
+            #         when 2 then 'February'
+            #         when 3 then 'March'
+            #         when 4 then 'April'
+            #         when 5 then 'May'
+            #         when 6 then 'June'
+            #         when 7 then 'July'
+            #         when 8 then 'August'
+            #         when 9 then 'September'
+            #         when 10 then 'October'
+            #         when 11 then 'November'
+            #         else 'December' 
+            #     end as themonth,
+            #     case cast (strftime('%w', att_date) as integer) 
+            #         when 0 then 'Sunday'
+            #         when 1 then 'Monday'
+            #         when 2 then 'Tuesday'
+            #         when 3 then 'Wednesday'
+            #         when 4 then 'Thursday'
+            #         when 5 then 'Friday'
+            #         else 'Saturday' 
+            #     end as day,
+            #     strftime('%d', att_date) as daynumber,
+            #     strftime('%Y', att_date) as theyear,
+            #     cast (strftime('%w', att_date) as integer) as weekday,
+            #     att_date, att_time, manual_flag from attendance where staff = ?
+            #     order by id desc
+            # '''
+            cur.execute(sql, (staff['id'],staff['id'], staff['id']))
             data = cur.fetchall()                
 
     sql = '''
@@ -123,7 +145,7 @@ def lookup():
     '''
     cur.execute(sql)
     stafflist = cur.fetchall()
-    return render_template('lookup.html', stafflist=stafflist, data=data, menuitems=get_menu(), staff=staff)
+    return render_template('lookup.html', stafflist=stafflist, data=data, staff=staff)
 
 @app.route('/importfile', methods=['GET', 'POST'])
 def importfile():
@@ -240,7 +262,7 @@ def importfile():
             # call the cleanup module to get rid of duplicates.
             cleanup_import()
 
-    return render_template('importfile.html', menuitems=get_menu(), message=message, status=valid, statussummary=statussummary)
+    return render_template('importfile.html', message=message, status=valid, statussummary=statussummary)
 
 
 @app.route('/listfiles', methods=['GET', 'POST'])
@@ -255,8 +277,8 @@ def listfiles():
     data= cur.fetchall()
     if len(data) == 0:
         data = None
-    # facility to delete....
-    return render_template('listfiles.html', menuitems=get_menu(), files=data)
+
+    return render_template('listfiles.html', files=data)
 
 @app.route('/filedelete/<fid>')
 def filedelete(fid):
@@ -308,7 +330,7 @@ def showimportdata(fid):
     if len(data) == 0:
         data = None
 
-    return render_template('showimportdata.html', menuitems=get_menu(), data=data, filename=filename)
+    return render_template('showimportdata.html', data=data, filename=filename)
 
 @app.route('/timereport', methods=['GET', 'POST'])
 def timereport():
@@ -333,19 +355,30 @@ def timereport():
         staffid = staff['id']
 
         # print(f"id={staffid}, {staff['fullname']}")
-        sql = 'select distinct(att_date) from attendance where staff = ? order by id desc'
-        cur.execute(sql, (staffid,))
+        # sql = 'select distinct(att_date) from attendance where staff = ? order by id desc'
+        sql = '''
+            select distinct(att_date), 'A' as source from attendance where staff = ?
+            and att_date not in (select distinct(att_date) from manual where staff = ?)
+            union
+            select distinct(att_date), 'B' as source from manual where staff = ?
+            order by att_date desc
+        '''
+        cur.execute(sql, (staffid, staffid, staffid))
         records = cur.fetchall()
 
         for record in records:
-            temp = {'att_date': record['att_date']}
+            temp = {'att_date': record['att_date'], 'source': record['source']}
             dayofweek = datetime.strptime(record['att_date'], '%Y-%m-%d').strftime('%A')
             temp['dayofweek'] = dayofweek
             # print(f"{record['att_date']}: ", end='')
-            sql = 'select id, att_time from attendance where staff = ? and att_date = ? order by id asc'
+            if temp['source'] == 'A':
+                sql = 'select id, att_time from attendance where staff = ? and att_date = ? order by id asc'
+            else:
+                sql = 'select id, att_time from manual where staff = ? and att_date = ? order by id asc'
             cur.execute(sql, (staffid,record['att_date']))
             clocks = cur.fetchall()
             
+            message = ''
             if len(clocks) == 2:
                 start_time = clocks[0]['att_time']
                 end_time = clocks[1]['att_time']
@@ -361,6 +394,11 @@ def timereport():
                 temp['end_time'] = '-'
                 message = 'Inconsistent data'
 
+            if temp['source'] == 'B':
+                if len(message) > 0:
+                    message += "&nbsp;<strong>Manual Data</strong>"
+                else:
+                    message = "<strong>Manual Data</strong>"
             #     print(f"Inconsistent clocking data - Clocks = {len(clocks)}")
 
             if len(clocks) == 2:
@@ -414,7 +452,7 @@ def timereport():
     '''
     cur.execute(sql)
     stafflist = cur.fetchall()
-    return render_template('timereport.html', stafflist=stafflist, data=data, menuitems=get_menu(), staff=staff, message=message)
+    return render_template('timereport.html', stafflist=stafflist, data=data, staff=staff, message=message)
 
 @app.route('/lookup_original', methods=['GET', 'POST'])
 def lookup_original():
@@ -470,7 +508,7 @@ def lookup_original():
     '''
     cur.execute(sql)
     stafflist = cur.fetchall()
-    return render_template('original_data.html', stafflist=stafflist, data=data, menuitems=get_menu(), staff=staff)
+    return render_template('original_data.html', stafflist=stafflist, data=data, staff=staff)
 
 @app.route('/exportdata/<uid>', methods=['GET', 'POST'])
 def exportdata(uid):
@@ -506,7 +544,7 @@ def exportdata(uid):
     else:
         message = f"Unable to create report for staff id={uid}"
 
-    return render_template('reportresult.html', message=message, menuitems=get_menu())
+    return render_template('reportresult.html', message=message)
 
 @app.route('/listreports')
 def listreports():
@@ -518,7 +556,7 @@ def listreports():
     if len(data) == 0:
         data = None
     
-    return render_template('listreports.html', reports=data, menuitems=get_menu())
+    return render_template('listreports.html', reports=data)
 
 
 @app.route('/reportdownload/<rid>', methods=['GET', 'POST'])
@@ -534,7 +572,7 @@ def reportdownload(rid):
         return send_file(os.path.join(app.config['REPORT_FOLDER'],data['filename']), as_attachment=True)
 
     message = f"Download of {data['filename']} completed"
-    return render_template('reportresult.html', message=message, menuitems=get_menu())
+    return render_template('reportresult.html', message=message)
 
 @app.route('/reportdelete/<rid>', methods=['GET', 'POST'])
 def reportdelete(rid):
@@ -554,16 +592,153 @@ def reportdelete(rid):
     cur.execute(sql, (rid,))
     db.commit()
     message = f"File {data['filename']} deleted"
-    return render_template('reportresult.html', message=message, menuitems=get_menu())
+    return render_template('reportresult.html', message=message)
     
 
-@app.route('/adjustment', methods=['GET', 'POST'])
-def adjustment():
+@app.route('/edit_attendance', methods=['GET', 'POST'])
+def edit_attendance():
+    # present list of people and then a form to select the dates to edit
     db = get_db()
     cur = db.cursor()
+    if request.method == "POST":
+        staff = int(request.form.get('selectstaff'))
+        if staff == 0:
+            return redirect(request.referrer)
+        sql = '''select min(id) id, staff, att_date, min(att_time) clock_in, max(att_time) clock_out
+            from attendance where staff = ?
+            group by staff, att_date
+            order by id desc
+        '''
+        cur.execute(sql, (staff,))
+        data = cur.fetchall()
+        staffname = None
+        if len(data) == 0:
+            data = None
+        else:
+            sql = 'select id, firstname, lastname from staff where id = ?'
+            cur.execute(sql, (staff,))
+            staffname = cur.fetchone()
+        return render_template('edit_attendance.html', attendance=data, staffname=staffname)
 
-    if request.method == 'POST':
-        # handle saving to the database.
-        staff = request.form.get('staff')
-        att_date = request.form.get('att_date')
-        clock_dir = request.form.get('clock_dir')
+    sql = 'select id, firstname, lastname from staff'
+    cur.execute(sql)
+    data = cur.fetchall()
+    return render_template('edit_selectstaff.html', staff=data)
+
+@app.route('/edit_item/<sid>/<did>')
+def edit_item(sid, did):
+    db = get_db()
+    cur = db.cursor()
+    sql = '''
+        select id, staff, att_date, att_time from attendance where staff = ?
+        and att_date = ?
+    '''
+    cur.execute(sql, (sid,did))
+    # data = cur.fetchone()
+    clock_in_hour = "00"
+    clock_in_minute = "00"
+    clock_out_hour = "00"
+    clock_out_minute = "00"
+    data = cur.fetchall()
+    if len(data) == 0:
+        data = None
+    elif len(data) == 1:    # only clock_in
+        row = data[0]
+        clock_in_hour = row['att_time'].split(':')[0]
+        clock_in_minute = row['att_time'][row['att_time'].find(':')+1:row['att_time'].rfind(':')]
+        clock_out_hour = "00"
+        clock_out_minute = "00"
+    elif len(data) == 2:
+        row = data[0]
+        clock_in_hour = row['att_time'].split(':')[0]
+        clock_in_minute = row['att_time'][row['att_time'].find(':')+1:row['att_time'].rfind(':')]
+        row = data[1]
+        clock_out_hour = row['att_time'].split(':')[0]
+        clock_out_minute = row['att_time'][row['att_time'].find(':')+1:row['att_time'].rfind(':')]
+    else:
+        clock_in_hour = "00"
+        clock_in_minute = "00"
+        clock_out_hour = "00"
+        clock_out_minute = "00"
+
+    staff = None
+    clock_data = {
+          'clock_in_hour': clock_in_hour,
+          'clock_in_minute': n10(clock_in_minute),
+          'clock_out_hour': clock_out_hour,
+          'clock_out_minute': n10(clock_out_minute)
+    }
+    if data:
+        sql = 'select id, firstname, lastname from staff where id = ?'
+        cur.execute(sql, (sid,))
+        staff = cur.fetchone()
+
+    return render_template('edit_item.html', att_record=data, staff=staff, clock_data=clock_data)
+
+
+@app.route('/save_item', methods=['GET', 'POST'])
+def save_item():
+    if request.method == "POST":
+        if request.form['submit'] == "cancel":
+            return redirect(url_for('edit_attendance'))
+
+        # collect form data
+        staff = int(request.form['staff'])
+        att_date = request.form['att_date']
+        # att_date looks like DDMMMYYYY, need to fix it to YYYY-MM-DD
+        att_date = datetime.strptime(att_date, '%d%b%Y').strftime('%Y-%m-%d')
+        clock_in_hour = request.form.get('clock_in_hour')
+        clock_in_minute = request.form.get('clock_in_minute')
+        clock_out_hour = request.form.get('clock_out_hour')
+        clock_out_minute = request.form.get('clock_out_minute')
+        notes = request.form['notes']
+
+        clock_in = f"{clock_in_hour}:{clock_in_minute}:00"
+        clock_out = f"{clock_out_hour}:{clock_out_minute}:00"
+
+        savedata = {
+            'id': 0,
+            'staff': staff,
+            'att_date': att_date,
+            'clock_in': clock_in,
+            'clock_out': clock_out,
+            'notes': notes
+        }
+
+        db = get_db()
+        cur = db.cursor()
+        sql = 'select id, firstname, lastname from staff where id = ?'
+        cur.execute(sql, (staff,))
+        data = cur.fetchone()
+        staff =  {
+            'id': staff,
+            'firstname': data['firstname'],
+            'lastname': data['lastname']
+        }
+
+        return render_template('save_confirm.html', att_record=savedata, staff=staff)
+    
+    # if this didn't come from a POST, send it back to where it came from
+    return redirect(request.referrer)
+
+@app.route('/save_attendance', methods=['GET', 'POST'])
+def save_attendance():
+    db = get_db()
+    cur = db.cursor()
+    if request.method == "POST":
+        if 'cancel' not in request.form['submit']:
+            staff = request.form['staff']
+            att_date = request.form['att_date']
+            clock_in = request.form['clock_in']
+            clock_out = request.form['clock_out']
+            notes = request.form['notes']
+            sql = '''
+                insert into manual (staff, att_date, att_time, notes)
+                values (?, ?, ?, ?)
+            '''
+            cur.execute(sql, (staff, att_date, clock_in, notes))
+            db.commit()
+            cur.execute(sql, (staff, att_date, clock_out, notes))
+            db.commit()
+        
+    return redirect(url_for('home'))

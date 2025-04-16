@@ -1,14 +1,16 @@
 {% extends 'base.html' %}
-{% from 'utils.j2' import menu %}
+{% from 'utils.j2' import nav %}
 
 {% block title %}Attendance Report{% endblock %}
 
 {% block heading %}Lookup Staff Member{% endblock %}
 
+{% set user = session['user'] %}
+
 {% block content %}
 <div class="row justify-content-center my-2">
     <div class="col">
-    {{ menu(menuitems) }}
+    {{ nav(user) }}
     </div>
 </div>
 <form action="{{ url_for('lookup') }}" method="POST">
@@ -44,15 +46,24 @@
                 <th>Formatted</th>
                 <th>Date</th>
                 <th>Time</th>
+                <th>Manual Entry</th>
             </tr>
             {% for row in data %}
             <tr>
-                <td scope="row">{{ loop.index }}</td>
+                <!-- <td scope="row">{{ loop.index }}</td>
                 <td>{{ row['weekday'] }}</td>
                 <td>{{ row['day'] }}</td>
                 <td>{{ row['daynumber'] }} {{ row['themonth'] }} {{ row['theyear'] }}</td>
                 <td>{{ row['att_date'] }}</td>
                 <td>{{ row['att_time'] }}</td>
+                <td>{% if row['manual_flag'] %}<strong>M</strong>{% else %}&nbsp;{% endif %}</td> -->
+                <td scope="row">{{ loop.index }}</td>
+                <td>{{ row['att_date']|to_date('%w') }}</td>
+                <td>{{ row['att_date']|to_date('%A') }}</td>
+                <td>{{ row['att_date']|to_date('%d') }} {{ row['att_date']|to_date('%B') }} {{ row['att_date']|to_date('%Y') }}</td>
+                <td>{{ row['att_date'] }}</td>
+                <td>{{ row['att_time'] }}</td>
+                <td>{% if row['manual_flag'] %}<strong>M</strong>{% else %}&nbsp;{% endif %}</td>
             </tr>
             {% endfor %}
         </table>
