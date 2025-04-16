@@ -527,8 +527,12 @@ def exportdata(uid):
         cur.execute(sql, (uid,))
         staff = cur.fetchone()
         now = datetime.now().strftime('%d%b%Y').upper()
+        sql = 'insert into reportlist (staff) values (?)'
+        cur.execute(sql, (uid,))
+        db.commit()
+        placeholder = cur.lastrowid
         # should look for an exception here, but will just continue.
-        filename = f"Attendance_{staff['fullname']}_{now}" + ".csv"
+        filename = f"Attendance_{staff['fullname']}_{now}_{placeholder}" + ".csv"
         f = open(os.path.join(app.config['REPORT_FOLDER'],filename), 'w')
         for row in data:
             temp = datetime.strptime(row['att_date'],'%Y-%m-%d')
@@ -538,8 +542,8 @@ def exportdata(uid):
             f.write(output+'\n')
         f.close()
         message = f"Report written to file {filename}"
-        sql = 'insert into reportlist (staff, filedate, filename) values (?, ?, ?)'
-        cur.execute(sql, (staff['id'], now, filename))
+        sql = 'update reportlist set filedate = ?, filename = ? where id = ?'
+        cur.execute(sql, (now, filename, placeholder))
         db.commit()
     else:
         message = f"Unable to create report for staff id={uid}"
