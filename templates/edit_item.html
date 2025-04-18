@@ -149,7 +149,11 @@
         <div class="col-3">
             {{ submitbutton('Update Attendance') }}
         </div>
-        <div class="col-3">&nbsp;</div>
+        <div class="col-3">
+            <div class="input-group">
+                <input type="text" name="tablename" class="form-control" value="{{ clock_data.tablename }}" size="10" readonly>
+            </div>            
+        </div>
         <div class="col-3">
             {{ cancelbutton('Cancel') }}
         </div>

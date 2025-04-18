@@ -20,6 +20,13 @@
 </div>
 {%- endmacro %}
 
+{% macro numberitem(name, label, min, max) -%}
+<div class="input-group">
+    <span class="input-group-text">{{ label }}</span>
+    <input type="number" name="{{ name }}" class="form-control" min="{{ min }}" max="{{ max }}" step="1" required>
+</div>
+{%- endmacro %}
+
 {% macro textitem(name, label) -%}
 <div class="input-group">
     <span class="input-group-text">{{ label }}</span>
@@ -158,15 +165,15 @@
         </a>
         <ul class="dropdown-menu" aria-labelledby="navbarDarkDropdownMenuLink">
             <li><a class="nav-item nav-link text-primary" href="{{ url_for('lookup') }}">Show Cleaned-up Import Data</a></li>
-            <li><a class="nav-item nav-link text-primary" href="{{ url_for('lookup_original') }}">RAW Original Clock Data</a></li>
+            <li><a class="nav-item nav-link text-primary" href="{{ url_for('lookup_original') }}">RAW Download Data</a></li>
         </ul>
     </li>
-    <a class="nav-item nav-link text-primary" href="{{ url_for('timereport') }}">Hours in Office Report</a>
+    <a class="nav-item nav-link text-primary" href="{{ url_for('timereport') }}">Hours Worked</a>
     <a class="nav-item nav-link text-primary" href="{{ url_for('listreports') }}">Download Reports</a>
     <a class="nav-item nav-link text-primary" href="{{ url_for('edit_attendance') }}">Edit Clocking Data</a>
     <li class="nav-item dropdown">
         <a class="nav-link dropdown-toggle text-primary" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-            File Mgmt
+            File Management
         </a>
         <ul class="dropdown-menu" aria-labelledby="navbarDarkDropdownMenuLink">
             <li><a class="nav-item nav-link text-primary" href="{{ url_for('importfile') }}">IMPORT a File</a></li>

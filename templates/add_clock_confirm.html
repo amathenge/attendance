@@ -14,7 +14,7 @@
 </div>
 
 {% if att_record %}
-<form action="{{ url_for('save_attendance') }}" method="POST">
+<form action="{{ url_for('save_clocks') }}" method="POST">
     <div class="row justify-content-center">
         <div class="col">
             {% if staff %}
@@ -29,20 +29,14 @@
             <p class="text-center">Confirm Manual Entry Attendance Record</p>
             <table class="table table-striped">
                 <tr>
-                    <th>Original Entry</th>
-                    <th>Staff ID</th>
+                    <th scope="col">Staff ID</th>
                     <th>DATE</th>
                     <th>Clock - IN</th>
                     <th>Clock - OUT</th>
                     <th>Notes</th>
                 </tr>
                 <tr>
-                    <td>
-                        <div class="input-group">
-                            <input type="text" name="tablename" class="form-control" value="{{ att_record.tablename }}" readonly>
-                        </div>                        
-                    </td>
-                    <td>
+                        <td>
                         <div class="input-group">
                             <input type="text" name="staff" class="form-control" value="{{ att_record.staff }}" readonly>
                         </div>                                                

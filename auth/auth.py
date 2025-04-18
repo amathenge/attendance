@@ -6,7 +6,7 @@ from sendEmail import send_otp_email
 
 auth = Blueprint("auth", __name__, static_folder="static", template_folder="templates")
 
-DEBUGGING = False
+DEBUGGING = True
 
 @auth.route('/', methods=['GET', 'POST'])
 def login():

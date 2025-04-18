@@ -1,6 +1,6 @@
 from flask import Flask, render_template, url_for, g, request, redirect, Blueprint, session, send_file
 from database import get_db
-from datetime import datetime
+from datetime import datetime, timedelta
 from werkzeug.utils import secure_filename
 import math
 import os
@@ -25,21 +25,6 @@ def close_db(error):
     db = g.pop('attendance_db', None)
     if db:
         db.close()
-
-def get_menu():
-    menuitems = [
-        { 'anchor': url_for('home'), 'title': 'HOME' },
-        { 'anchor': url_for('lookup'), 'title': 'LOOKUP' },
-        { 'anchor': url_for('timereport'), 'title': 'TIME REPORT' },
-        { 'anchor': url_for('edit_attendance'), 'title': 'MANUAL ENTRY' },
-        { 'anchor': url_for('importfile'), 'title': 'IMPORT FILE' },
-        { 'anchor': url_for('listfiles'), 'title': 'LIST FILES' },
-        { 'anchor': url_for('listreports'), 'title': 'LIST REPORTS' },
-        { 'anchor': url_for('lookup_original'), 'title': 'RAW DATA' },
-        { 'anchor': url_for('auth.logout'), 'title': 'LOGOUT' }
-    ]
-
-    return menuitems
 
 def logged_in():
     if 'user' not in session or not session['user']['otp']:
@@ -68,11 +53,17 @@ def home():
     # elapsed_days is the days since 'now' when the report is run - so to get a 
     # week old report, get only 7 days.
     sql = '''
-        select s.id, s.firstname, s.lastname, a.att_date, a.att_time,
+        select s.id id, s.firstname, s.lastname, a.att_date att_date, a.att_time,
         (julianday(date('now'))-julianday(date(a.att_date))) elapsed_days
         from attendance a left join staff s on a.staff = s.id
         where (julianday(date('now'))-julianday(date(a.att_date))) < 10
-        order by a.id desc
+        and a.att_date not in (select distinct(att_date) from manual where staff = s.id)
+        union
+        select d.id id, d.firstname, d.lastname, c.att_date att_date, c.att_time,
+        (julianday(date('now'))-julianday(date(c.att_date))) elapsed_days
+        from manual c left join staff d on c.staff = d.id
+        where (julianday(date('now'))-julianday(date(c.att_date))) < 10
+        order by att_date desc, id asc
     '''
     cur.execute(sql)
     data = cur.fetchall()
@@ -98,12 +89,12 @@ def lookup():
         staff = cur.fetchone()
         if staff:
             sql = '''
-                select id, att_date, att_time, manual_flag
+                select id, att_date, att_time, 0 as manual_flag
                 from attendance where staff = ?
                 and att_date not in 
                 (select distinct(att_date) from manual where staff = ?)
                 union
-                select id, att_date, att_time, manual as manual_flag
+                select id, att_date, att_time, 1 as manual_flag
                 from manual where staff = ?
                 order by att_date desc, id asc
             '''
@@ -243,8 +234,8 @@ def importfile():
             # insert lines from importdata to attendance where valid
             if valid:
                 sql = '''
-                    insert or ignore into attendance (staff, att_date, att_time, att_type, att_dir, att_status)
-                    select staff, att_date, att_time, att_type, att_dir, att_status from importdata
+                    insert or ignore into attendance (staff, att_date, att_time)
+                    select staff, att_date, att_time from importdata
                     where valid = 1 and fileid = ?
                 '''
                 cur.execute(sql, (fileid,))
@@ -304,6 +295,7 @@ def filedelete(fid):
     cur.execute(sql, (fid,))
     db.commit()
 
+    # this will take you back to the file delete page
     return redirect(request.referrer)
 
 
@@ -324,6 +316,7 @@ def showimportdata(fid):
         select f.id, f.fileid, f.staff, s.firstname || ' ' || s.lastname as fullname, f.att_date, f.att_time, 
         f.att_type, f.att_dir, f.att_status, f.valid
         from importdata f join staff s on (f.staff = s.id) where fileid = ?
+        order by f.id desc
     '''
     cur.execute(sql, (fid,))
     data = cur.fetchall()
@@ -396,9 +389,9 @@ def timereport():
 
             if temp['source'] == 'B':
                 if len(message) > 0:
-                    message += "&nbsp;<strong>Manual Data</strong>"
+                    message += "&nbsp;-&nbsp;Manual Data"
                 else:
-                    message = "<strong>Manual Data</strong>"
+                    message = "Manual Data"
             #     print(f"Inconsistent clocking data - Clocks = {len(clocks)}")
 
             if len(clocks) == 2:
@@ -554,7 +547,7 @@ def exportdata(uid):
 def listreports():
     db = get_db()
     cur = db.cursor()
-    sql = 'select id, staff, filedate, filename from reportlist'
+    sql = 'select id, staff, filedate, filename from reportlist order by id desc'
     cur.execute(sql)
     data = cur.fetchall()
     if len(data) == 0:
@@ -608,12 +601,17 @@ def edit_attendance():
         staff = int(request.form.get('selectstaff'))
         if staff == 0:
             return redirect(request.referrer)
-        sql = '''select min(id) id, staff, att_date, min(att_time) clock_in, max(att_time) clock_out
-            from attendance where staff = ?
+        sql = '''select min(id) id, staff, att_date, min(att_time) clock_in, max(att_time) clock_out,
+            'A' source from attendance where staff = ?
+            and att_date not in (select distinct(att_date) from manual where staff = ?)
             group by staff, att_date
-            order by id desc
+            union
+            select min(id) id, staff, att_date, min(att_time) clock_in, max(att_time) clock_out,
+            'B' source from manual where staff = ?
+            group by staff, att_date
+            order by att_date desc
         '''
-        cur.execute(sql, (staff,))
+        cur.execute(sql, (staff,staff, staff))
         data = cur.fetchall()
         staffname = None
         if len(data) == 0:
@@ -629,14 +627,20 @@ def edit_attendance():
     data = cur.fetchall()
     return render_template('edit_selectstaff.html', staff=data)
 
-@app.route('/edit_item/<sid>/<did>')
-def edit_item(sid, did):
+@app.route('/edit_item/<sid>/<did>/<tid>')
+def edit_item(sid, did, tid):
     db = get_db()
     cur = db.cursor()
-    sql = '''
-        select id, staff, att_date, att_time from attendance where staff = ?
+    tablename = None
+    if tid == 'A':
+        tablename = 'attendance'
+    else:
+        tablename = 'manual'
+    sql = f'''
+        select id, staff, att_date, att_time from {tablename} where staff = ?
         and att_date = ?
     '''
+
     cur.execute(sql, (sid,did))
     # data = cur.fetchone()
     clock_in_hour = "00"
@@ -667,10 +671,11 @@ def edit_item(sid, did):
 
     staff = None
     clock_data = {
-          'clock_in_hour': clock_in_hour,
-          'clock_in_minute': n10(clock_in_minute),
-          'clock_out_hour': clock_out_hour,
-          'clock_out_minute': n10(clock_out_minute)
+        'tablename': tablename,
+        'clock_in_hour': clock_in_hour,
+        'clock_in_minute': n10(clock_in_minute),
+        'clock_out_hour': clock_out_hour,
+        'clock_out_minute': n10(clock_out_minute)
     }
     if data:
         sql = 'select id, firstname, lastname from staff where id = ?'
@@ -696,17 +701,18 @@ def save_item():
         clock_out_hour = request.form.get('clock_out_hour')
         clock_out_minute = request.form.get('clock_out_minute')
         notes = request.form['notes']
+        tablename = request.form['tablename']
 
         clock_in = f"{clock_in_hour}:{clock_in_minute}:00"
         clock_out = f"{clock_out_hour}:{clock_out_minute}:00"
 
         savedata = {
-            'id': 0,
             'staff': staff,
             'att_date': att_date,
             'clock_in': clock_in,
             'clock_out': clock_out,
-            'notes': notes
+            'notes': notes,
+            'tablename': tablename
         }
 
         db = get_db()
@@ -736,7 +742,13 @@ def save_attendance():
             clock_in = request.form['clock_in']
             clock_out = request.form['clock_out']
             notes = request.form['notes']
-            sql = '''
+            # tablename = request.form['tablename']
+            # sql = f"delete from {tablename} where att_date = ?"
+            sql = f"delete from manual where att_date = ?"
+            cur.execute(sql, (att_date,))
+            db.commit()
+            # all changes should go to the manual table.
+            sql = f'''
                 insert into manual (staff, att_date, att_time, notes)
                 values (?, ?, ?, ?)
             '''
@@ -746,3 +758,112 @@ def save_attendance():
             db.commit()
         
     return redirect(url_for('home'))
+
+@app.route('/add_new_record/<sid>', methods=['GET', 'POST'])
+def add_new_record(sid):
+    # figure out the gaps and only give an option to add where there's a gap.
+    # otherwise update/overwrite existing records.
+    db = get_db()
+    cur = db.cursor()
+    # missing dates, including Sundays, from the earliest date, to today.
+    # also check the manual table...
+    sql = '''
+        select min(id) mid, att_date from attendance where staff = ? group by att_date
+        union
+        select min(id) mid, att_date from manual where staff = ? group by att_date
+        order by att_date asc
+    '''
+    cur.execute(sql, (sid,))
+    data = cur.fetchall()
+    if len(data) == 0:
+        data = None
+
+    temp = []
+    date_collection = []
+    missing_dates = []
+    if data:
+        for row in data:
+            temp.append(row['att_date'][:])
+
+        for item in temp:
+            date_collection.append(datetime.strptime(item, '%Y-%m-%d'))
+
+        
+        first_date = date_collection[0]
+        # can possibly allow to go to the current date...
+        # last_date = datetime.now()
+        last_date = date_collection[len(date_collection)-1]
+
+        cur_date = first_date + timedelta(days=1)
+        while cur_date < last_date:
+            if cur_date not in date_collection:
+                missing_dates.append({'att_date': cur_date})
+
+            cur_date = cur_date + timedelta(days=1)
+
+    sql = 'select id, firstname, lastname from staff where id = ?'
+    cur.execute(sql, (sid,))
+    staff = cur.fetchone()
+    if staff is None:
+        return redirect(request.referrer)
+    
+    return render_template('add_new_clock.html', missing_dates=missing_dates, staff=staff)
+        
+@app.route('/add_clock', methods=['GET', 'POST'])
+def add_clock():
+    db = get_db()
+    cur = db.cursor()
+
+    if request.method == "POST":
+        sid = int(request.form['staff'])
+        att_date = request.form.get('att_date')
+        clock_in_hour = request.form.get('clock_in_hour')
+        clock_in_minute = request.form.get('clock_in_minute')
+        clock_out_hour = request.form.get('clock_out_hour')
+        clock_out_minute = request.form.get('clock_out_minute')
+        notes = request.form['notes']
+
+        sql = 'select id, firstname, lastname from staff where id = ?'
+        cur.execute(sql, (sid,))
+        staff = cur.fetchone()
+
+        clock_in = f"{clock_in_hour}:{clock_in_minute}:00"
+        clock_out = f"{clock_out_hour}:{clock_out_minute}:00"
+
+        savedata = {
+            'staff': staff['id'],
+            'att_date': att_date,
+            'clock_in': clock_in,
+            'clock_out': clock_out,
+            'notes': notes
+        }
+
+        return render_template('add_clock_confirm.html', att_record=savedata, staff=staff)
+    
+    return redirect(request.referrer)
+
+@app.route('/save_clocks', methods=['GET', 'POST'])
+def save_clocks():
+    db = get_db()
+    cur = db.cursor()
+
+    if request.method == "POST":
+        if 'cancel' not in request.form['submit']:
+            staff = request.form['staff']
+            att_date = request.form['att_date']
+            clock_in = request.form['clock_in']
+            clock_out = request.form['clock_out']
+            notes = request.form['notes']
+
+            sql = '''
+                insert into manual (staff, att_date, att_time, notes)
+                values (?, ?, ?, ?)
+            '''
+
+            cur.execute(sql, (staff, att_date, clock_in, notes))
+            db.commit()
+            cur.execute(sql, (staff, att_date, clock_out, notes))
+            db.commit()
+
+    return redirect(url_for('home'))
+

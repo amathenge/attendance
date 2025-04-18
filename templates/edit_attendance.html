@@ -23,6 +23,11 @@
         {% endif %}
     </div>
 </div>
+<div class="row justify-content-center my-3">
+    <div class="col-4 d-grid gap-2">
+        <a href="{{ url_for('add_new_record', sid=staffname.id) }}" class="btn btn-primary" type="button">Add a new record for {{ staffname.firstname }}</a>
+    </div>
+</div>
 <div class="row justify-content-center">
     <div class="col">
         <table class="table table-striped">
@@ -32,14 +37,16 @@
                 <th>Date</th>
                 <th>Clock IN</th>
                 <th>Clock OUT</th>
+                <th>Manual Entry</th>
             </tr>
             {% for row in attendance %}
             <tr>
-                <td><a href="{{ url_for('edit_item', sid=staffname.id, did=row.att_date) }}"><i class="fa fa-edit"></i></a></td>
+                <td><a href="{{ url_for('edit_item', sid=staffname.id, did=row.att_date, tid=row.source) }}"><i class="fa fa-edit"></i></a></td>
                 <td>{{ row.att_date|to_date('%A') }}</td>
                 <td>{{ row.att_date|to_date('%d') }} {{ row.att_date|to_date('%B') }} {{ row.att_date|to_date('%Y') }}</td>
                 <td>{% if row.clock_in %}{{ row.clock_in }}{% else %}&nbsp;{% endif %}</td>
                 <td>{% if row.clock_out %}{{ row.clock_out }}{% else %}&nbsp;{% endif %}</td>
+                <td>{% if row.source == 'B' %}<strong>Manual Entry</strong>{% else %}&nbsp;{% endif %}</td>
             </tr>
             {% endfor %}
         </table>
