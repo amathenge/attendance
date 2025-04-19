@@ -139,7 +139,11 @@
                         </div>
                     </td>
                     <td>
-                        <textarea class="form-control" name="notes" rows="3" required></textarea>
+                        <select class="form-select" name="reason" required>
+                            {% for row in reasons %}
+                            <option value="{{ row['code'] }}">{{ row['description'] }}</option>
+                            {% endfor %}
+                        </select>
                     </td>
                 </tr>
             </table>
@@ -154,6 +158,13 @@
                 <input type="text" name="tablename" class="form-control" value="{{ clock_data.tablename }}" size="10" readonly>
             </div>            
         </div>
+        {% if clock_data.tablename == 'manual' %}
+        <div class="col-3">
+            <div class="input-group">
+                <button class="btn btn-secondary form-control" type="submit" name="submit" value="delete" formnovalidate>DELETE CLOCK</button>
+            </div>
+        </div>
+        {% endif %}
         <div class="col-3">
             {{ cancelbutton('Cancel') }}
         </div>

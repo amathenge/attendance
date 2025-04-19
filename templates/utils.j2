@@ -56,7 +56,7 @@
 
 {%- macro cancelbutton(label) %}
 <div class="input-group">
-    <button class="btn btn-primary form-control" type="submit" name="submit" value="cancel" formnovalidate>{{ label }}</button>
+    <button class="btn btn-secondary form-control" type="submit" name="submit" value="cancel" formnovalidate>{{ label }}</button>
 </div>
 {% endmacro -%}
 
@@ -160,6 +160,7 @@
     <div class="navbar-nav">
     <a class="nav-item nav-link text-primary" href="{{ url_for('home') }}">Home</a>
     <li class="nav-item dropdown">
+        {% if user.auth|ishrmgr or user.auth|isadmin or user.auth|isdatamgr %}
         <a class="nav-link dropdown-toggle text-primary" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
             Lookup Staff
         </a>
@@ -167,10 +168,26 @@
             <li><a class="nav-item nav-link text-primary" href="{{ url_for('lookup') }}">Show Cleaned-up Import Data</a></li>
             <li><a class="nav-item nav-link text-primary" href="{{ url_for('lookup_original') }}">RAW Download Data</a></li>
         </ul>
+        {% endif %}
     </li>
+    {% if user.auth|isadmin or user.auth|ishrmgr %}
     <a class="nav-item nav-link text-primary" href="{{ url_for('timereport') }}">Hours Worked</a>
-    <a class="nav-item nav-link text-primary" href="{{ url_for('listreports') }}">Download Reports</a>
+    {% endif %}
+    {% if user.auth|isadmin or user.auth|ishrmgr %}
+    <li class="nav-item dropdown">
+        <a class="nav-link dropdown-toggle text-primary" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            Staff Reports
+        </a>
+        <ul class="dropdown-menu" aria-labelledby="navbarDarkDropdownMenuLink">
+            <li><a class="nav-item nav-link text-primary" href="{{ url_for('listreports') }}">Download Saved Reports</a></li>
+            <li><a class="nav-item nav-link text-primary" href="{{ url_for('clockreports') }}">Report of Clock Changes</a></li>
+        </ul>
+    </li>
+    {% endif %}
+    {% if user.auth|isadmin or user.auth|ishrmgr or user.auth|isdatamgr %}
     <a class="nav-item nav-link text-primary" href="{{ url_for('edit_attendance') }}">Edit Clocking Data</a>
+    {% endif %}
+    {% if user.auth|isadmin or user.auth|isdatamgr %}
     <li class="nav-item dropdown">
         <a class="nav-link dropdown-toggle text-primary" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
             File Management
@@ -180,10 +197,26 @@
             <li><a class="nav-item nav-link text-primary" href="{{ url_for('listfiles') }}">LIST Imported Files</a></li>
         </ul>
     </li>    
+    {% endif %}
     </div>
 </div>
 <div class="navbar-nav navbar-right">
     <span class="nav-item navbar-text fw-light">[{{ user.firstname }}]</span>
+    {% if user.auth|isadmin or user.auth|isusermgr or user.auth|isdatamgr %}
+    <li class="nav-item dropdown">
+        <a class="nav-link dropdown-toggle text-primary" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            Staff &amp; Users
+        </a>
+        <ul class="dropdown-menu" aria-labelledby="navbarDarkDropdownMenuLink">
+            {% if user.auth|isadmin or user.auth|isusermgr %}
+            <li><a class="nav-item nav-link text-primary" href="{{ url_for('useradmin') }}">MANAGE USERS</a></li>
+            {% endif %}
+            {% if user.auth|isadmin or user.auth|isdatamgr %}
+            <li><a class="nav-item nav-link text-primary" href="{{ url_for('staffadmin') }}">MANAGE STAFF</a></li>
+            {% endif %}
+        </ul>
+    </li>
+    {% endif %}
     <a class="nav-item nav-link text-primary" href="{{ url_for('auth.logout') }}">LOGOUT</a>
 </div>
 </nav>

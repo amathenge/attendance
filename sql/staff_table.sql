@@ -6,3 +6,4 @@ create table staff (
     lastname varchar(32) not null
 );
 
+.read sql/staff_data.sql

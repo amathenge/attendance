@@ -34,7 +34,7 @@
                 <td scope="row">{{ row['id'] }}</td>
                 <td>{{ row['firstname'] }}</td>
                 <td>{{ row['lastname'] }}</td>
-                <td>{{ row['att_date'] }}</td>
+                <td>{{ row['att_date']|to_date('%d %b %Y') }}</td>
                 <td>{{ row['att_time'] }}</td>
             </tr>
             {% endfor %}

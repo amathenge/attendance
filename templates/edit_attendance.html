@@ -46,7 +46,10 @@
                 <td>{{ row.att_date|to_date('%d') }} {{ row.att_date|to_date('%B') }} {{ row.att_date|to_date('%Y') }}</td>
                 <td>{% if row.clock_in %}{{ row.clock_in }}{% else %}&nbsp;{% endif %}</td>
                 <td>{% if row.clock_out %}{{ row.clock_out }}{% else %}&nbsp;{% endif %}</td>
-                <td>{% if row.source == 'B' %}<strong>Manual Entry</strong>{% else %}&nbsp;{% endif %}</td>
+                <td>
+                    {% if row.source == 'B' %}<strong>Manual Entry</strong>{% else %}&nbsp;{% endif %}
+                    {% if row.reason %}<br />Reason: {{ row.reason }}{% endif %}
+                </td>
             </tr>
             {% endfor %}
         </table>

@@ -8,6 +8,8 @@ auth = Blueprint("auth", __name__, static_folder="static", template_folder="temp
 
 DEBUGGING = True
 
+from constants import *
+
 @auth.route('/', methods=['GET', 'POST'])
 def login():
     if "user" in session and session["user"]["otp"]:
@@ -29,7 +31,7 @@ def login():
             'phone': '254000000000',
             'passauth': None,
             'tfaauth': None,
-            'auth': (1,),
+            'auth': (ADMIN,),
             'locked': False,
             'lastlogin': now_string,
             'otp': 123456

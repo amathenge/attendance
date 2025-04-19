@@ -37,7 +37,7 @@
                 <td scope="row">{{ row.id }}</a></td>
                 <td>{{ row.fileid }}</td>
                 <td>{{ row.staff}}&nbsp;-&nbsp;{{ row.fullname }}</td>
-                <td>{{ row.att_date }}</td>
+                <td>{{ row.att_date|to_date('%d %b %Y') }}</td>
                 <td>{{ row.att_time }}</td>
                 <td>{{ row.att_type }}</td>
                 <td>{{ row.att_dir }}</td>

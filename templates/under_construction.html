@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% from 'utils.j2' import nav %}
+
+{% block title %}&nbsp;{% endblock %}
+
+{% block heading %}Under Construction - {% if page %}{{ page }}{% endif %}{% endblock %}
+
+{% block content %}
+
+<div class="row justify-content-center">
+    <div class="col">
+        {{ nav(session['user']) }}
+    </div>
+</div>
+<div class="row justify-content-center">
+    <div class="col">
+        <p class="text-center">This page {% if page %}{{ page }}{% endif %} is under construction</p>
+    </div>
+</div>
+
+{% endblock %}

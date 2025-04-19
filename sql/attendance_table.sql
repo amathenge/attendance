@@ -24,13 +24,3 @@ create table original_data (
     att_status int not null default 0,
     unique (staff, att_date, att_time)
 );
-
--- drop table if exists adjustment;
-
--- create table adjustment (
---     id integer primary key autoincrement,
---     staff integer references staff (id),
---     att_date text not null,
---     att_time text not null,
---     message text not null
--- )

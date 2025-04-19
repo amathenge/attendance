@@ -76,7 +76,12 @@ def home():
 def lookup():
     if not logged_in():
         return redirect(url_for('auth.login'))
-    
+
+    auth = (HR_MANAGER, DATA_MANAGER, ADMIN)
+    user = session['user']
+    if not hasauth(user['auth'], auth):
+        return redirect(request.referrer)
+
     staff = None
     data = None
     stafflist = None
@@ -142,6 +147,11 @@ def lookup():
 def importfile():
     if not logged_in():
         return redirect(url_for('auth.login'))
+
+    auth = (DATA_MANAGER, ADMIN)
+    user = session['user']
+    if not hasauth(user['auth'], auth):
+        return redirect(request.referrer)
     
     message = None
     now = datetime.now()
@@ -260,6 +270,11 @@ def importfile():
 def listfiles():
     if not logged_in():
         return redirect(url_for('auth.login'))
+
+    auth = (DATA_MANAGER, ADMIN)
+    user = session['user']
+    if not hasauth(user['auth'], auth):
+        return redirect(request.referrer)
     
     db = get_db()
     cur = db.cursor()
@@ -275,6 +290,11 @@ def listfiles():
 def filedelete(fid):
     if not logged_in():
         return redirect(url_for('auth.login'))
+
+    auth = (DATA_MANAGER, ADMIN)
+    user = session['user']
+    if not hasauth(user['auth'], auth):
+        return redirect(request.referrer)
     
     db = get_db()
     cur = db.cursor()
@@ -303,6 +323,11 @@ def filedelete(fid):
 def showimportdata(fid):
     if not logged_in():
         return redirect(url_for('auth.login'))
+
+    auth = (HR_MANAGER, ADMIN)
+    user = session['user']
+    if not hasauth(user['auth'], auth):
+        return redirect(request.referrer)
     
     db = get_db()
     cur = db.cursor()
@@ -329,7 +354,13 @@ def showimportdata(fid):
 def timereport():
     if not logged_in():
         return redirect(url_for('auth.login'))
-    
+
+    auth = (HR_MANAGER, ADMIN)
+    user = session['user']
+    if not hasauth(user['auth'], auth):
+        return redirect(request.referrer)
+
+
     staff = None
     data = None
     stafflist = None
@@ -379,8 +410,12 @@ def timereport():
                 temp['end_time'] = end_time
                 # print(f"From {start_time} To {end_time} = ", end='')
             elif len(clocks) == 1:
-                temp['start_time'] = clocks[0]['att_time']
-                temp['end_time'] = '-'
+                if (datetime.strptime(clocks[0]['att_time'], '%H:%M:%S') < datetime.strptime('10:00:00','%H:%M:%S')):
+                    temp['start_time'] = clocks[0]['att_time']
+                    temp['end_time'] = '-'
+                else:
+                    temp['start_time'] = '-'
+                    temp['end_time'] = clocks[0]['att_time']
                 message = 'Inconsistent data'
             else:
                 temp['start_time'] = '-'
@@ -388,11 +423,19 @@ def timereport():
                 message = 'Inconsistent data'
 
             if temp['source'] == 'B':
-                if len(message) > 0:
-                    message += "&nbsp;-&nbsp;Manual Data"
+                if len(clocks) > 0:
+                    sql = 'select code, description from reason where code = (select reason from manual where id = ?)'
+                    cur.execute(sql, (clocks[0]['id'],))
+                    reason = cur.fetchone()
+                    if len(message) > 0:
+                        message += f"\n{reason['code']}: {reason['description']}"
+                    else:
+                        message = f"Manual Data\n{reason['code']}: {reason['description']}"
                 else:
-                    message = "Manual Data"
-            #     print(f"Inconsistent clocking data - Clocks = {len(clocks)}")
+                    if len(message) > 0:
+                        message += "\nUnknown Error with Manual Table"
+                    else:
+                        message = "Unknown Error with Manual Table"
 
             if len(clocks) == 2:
                 clock_start = datetime.strptime(start_time, '%H:%M:%S')
@@ -416,7 +459,10 @@ def timereport():
                 # print(f"{difference_hours:02d} H {difference_mins:02d} M {difference_secs:02d} S")
             else:
                 temp['work_hours'] = '-'
-                message = 'Inconsistent data'
+                if len(message) > 0:
+                    message = 'Inconsistent data'+'\n'+message.replace('Inconsistent data', '')
+                else:
+                    message = 'Inconsistent data'
             if message:
                 temp['message'] = message
             else:
@@ -451,7 +497,12 @@ def timereport():
 def lookup_original():
     if not logged_in():
         return redirect(url_for('auth.login'))
-    
+
+    auth = (HR_MANAGER, DATA_MANAGER, ADMIN)
+    user = session['user']
+    if not hasauth(user['auth'], auth):
+        return redirect(request.referrer)
+
     staff = None
     data = None
     stafflist = None
@@ -505,6 +556,14 @@ def lookup_original():
 
 @app.route('/exportdata/<uid>', methods=['GET', 'POST'])
 def exportdata(uid):
+    if not logged_in():
+        return redirect(url_for('auth.login'))
+
+    auth = (HR_MANAGER, ADMIN)
+    user = session['user']
+    if not hasauth(user['auth'], auth):
+        return redirect(request.referrer)
+
     db = get_db()
     cur = db.cursor()
     sql = '''
@@ -545,6 +604,14 @@ def exportdata(uid):
 
 @app.route('/listreports')
 def listreports():
+    if not logged_in():
+        return redirect(url_for('auth.login'))
+
+    auth = (HR_MANAGER, ADMIN)
+    user = session['user']
+    if not hasauth(user['auth'], auth):
+        return redirect(request.referrer)
+
     db = get_db()
     cur = db.cursor()
     sql = 'select id, staff, filedate, filename from reportlist order by id desc'
@@ -558,6 +625,14 @@ def listreports():
 
 @app.route('/reportdownload/<rid>', methods=['GET', 'POST'])
 def reportdownload(rid):
+    if not logged_in():
+        return redirect(url_for('auth.login'))
+
+    auth = (HR_MANAGER, ADMIN)
+    user = session['user']
+    if not hasauth(user['auth'], auth):
+        return redirect(request.referrer)
+
     db = get_db()
     cur = db.cursor()
     sql = 'select filename from reportlist where id = ?'
@@ -573,6 +648,14 @@ def reportdownload(rid):
 
 @app.route('/reportdelete/<rid>', methods=['GET', 'POST'])
 def reportdelete(rid):
+    if not logged_in():
+        return redirect(url_for('auth.login'))
+
+    auth = (HR_MANAGER, ADMIN)
+    user = session['user']
+    if not hasauth(user['auth'], auth):
+        return redirect(request.referrer)
+
     db = get_db()
     cur = db.cursor()
     sql = 'select filename from reportlist where id = ?'
@@ -594,6 +677,15 @@ def reportdelete(rid):
 
 @app.route('/edit_attendance', methods=['GET', 'POST'])
 def edit_attendance():
+    if not logged_in():
+        return redirect(url_for('auth.login'))
+
+    auth = (DATA_MANAGER, HR_MANAGER, ADMIN)
+    user = session['user']
+
+    if not hasauth(user['auth'], auth):
+        return redirect(request.referrer)
+
     # present list of people and then a form to select the dates to edit
     db = get_db()
     cur = db.cursor()
@@ -602,25 +694,38 @@ def edit_attendance():
         if staff == 0:
             return redirect(request.referrer)
         sql = '''select min(id) id, staff, att_date, min(att_time) clock_in, max(att_time) clock_out,
-            'A' source from attendance where staff = ?
+            'A' source, NULL reason from attendance where staff = ?
             and att_date not in (select distinct(att_date) from manual where staff = ?)
             group by staff, att_date
             union
             select min(id) id, staff, att_date, min(att_time) clock_in, max(att_time) clock_out,
-            'B' source from manual where staff = ?
+            'B' source, reason from manual where staff = ?
             group by staff, att_date
             order by att_date desc
         '''
         cur.execute(sql, (staff,staff, staff))
         data = cur.fetchall()
         staffname = None
+        attendance = None
         if len(data) == 0:
             data = None
         else:
+            # clean up data - when only one clock, it's both min() and max()
+            attendance = []
+            temp_row = None
+            for row in data:
+                temp_row = dict(row)
+                if row['clock_in'] == row['clock_out']:
+                    dt = datetime.strptime(row['clock_in'], '%H:%M:%S')
+                    if dt <= datetime.strptime('10:00:00', '%H:%M:%S'):
+                        temp_row['clock_out'] = None
+                    else:
+                        temp_row['clock_in'] = None
+                attendance.append(temp_row.copy()) 
             sql = 'select id, firstname, lastname from staff where id = ?'
             cur.execute(sql, (staff,))
             staffname = cur.fetchone()
-        return render_template('edit_attendance.html', attendance=data, staffname=staffname)
+        return render_template('edit_attendance.html', attendance=attendance, staffname=staffname)
 
     sql = 'select id, firstname, lastname from staff'
     cur.execute(sql)
@@ -629,6 +734,15 @@ def edit_attendance():
 
 @app.route('/edit_item/<sid>/<did>/<tid>')
 def edit_item(sid, did, tid):
+    if not logged_in():
+        return redirect(url_for('auth.login'))
+
+    auth = (DATA_MANAGER, HR_MANAGER, ADMIN)
+    user = session['user']
+
+    if not hasauth(user['auth'], auth):
+        return redirect(request.referrer)
+
     db = get_db()
     cur = db.cursor()
     tablename = None
@@ -650,12 +764,17 @@ def edit_item(sid, did, tid):
     data = cur.fetchall()
     if len(data) == 0:
         data = None
-    elif len(data) == 1:    # only clock_in
+    elif len(data) == 1:    # if time < 10:00AM, assume clock-in. 
         row = data[0]
         clock_in_hour = row['att_time'].split(':')[0]
         clock_in_minute = row['att_time'][row['att_time'].find(':')+1:row['att_time'].rfind(':')]
         clock_out_hour = "00"
         clock_out_minute = "00"
+        if int(clock_in_hour) >= 10:
+            clock_out_hour = clock_in_hour
+            clock_out_minute = clock_in_minute
+            clock_in_hour = "00"
+            clock_in_minute = "00"
     elif len(data) == 2:
         row = data[0]
         clock_in_hour = row['att_time'].split(':')[0]
@@ -681,12 +800,24 @@ def edit_item(sid, did, tid):
         sql = 'select id, firstname, lastname from staff where id = ?'
         cur.execute(sql, (sid,))
         staff = cur.fetchone()
+    sql = 'select id, code, description from reason'
+    cur.execute(sql)
+    reasons = cur.fetchall()
 
-    return render_template('edit_item.html', att_record=data, staff=staff, clock_data=clock_data)
+    return render_template('edit_item.html', att_record=data, staff=staff, clock_data=clock_data, reasons=reasons)
 
 
 @app.route('/save_item', methods=['GET', 'POST'])
 def save_item():
+    if not logged_in():
+        return redirect(url_for('auth.login'))
+
+    auth = (DATA_MANAGER, HR_MANAGER, ADMIN)
+    user = session['user']
+
+    if not hasauth(user['auth'], auth):
+        return redirect(request.referrer)
+
     if request.method == "POST":
         if request.form['submit'] == "cancel":
             return redirect(url_for('edit_attendance'))
@@ -700,7 +831,7 @@ def save_item():
         clock_in_minute = request.form.get('clock_in_minute')
         clock_out_hour = request.form.get('clock_out_hour')
         clock_out_minute = request.form.get('clock_out_minute')
-        notes = request.form['notes']
+        reason = request.form.get('reason')
         tablename = request.form['tablename']
 
         clock_in = f"{clock_in_hour}:{clock_in_minute}:00"
@@ -711,7 +842,7 @@ def save_item():
             'att_date': att_date,
             'clock_in': clock_in,
             'clock_out': clock_out,
-            'notes': notes,
+            'reason': reason,
             'tablename': tablename
         }
 
@@ -726,6 +857,10 @@ def save_item():
             'lastname': data['lastname']
         }
 
+        if request.form['submit'] == 'delete':
+            return render_template('delete_confirm.html', att_record=savedata, staff=staff)
+
+
         return render_template('save_confirm.html', att_record=savedata, staff=staff)
     
     # if this didn't come from a POST, send it back to where it came from
@@ -733,34 +868,52 @@ def save_item():
 
 @app.route('/save_attendance', methods=['GET', 'POST'])
 def save_attendance():
+    if not logged_in():
+        return redirect(url_for('auth.login'))
+
+    auth = (DATA_MANAGER, HR_MANAGER, ADMIN)
+    user = session['user']
+
+    if not hasauth(user['auth'], auth):
+        return redirect(request.referrer)
+
     db = get_db()
     cur = db.cursor()
     if request.method == "POST":
         if 'cancel' not in request.form['submit']:
-            staff = request.form['staff']
+            staff = int(request.form['staff'])
             att_date = request.form['att_date']
             clock_in = request.form['clock_in']
             clock_out = request.form['clock_out']
-            notes = request.form['notes']
+            reason = request.form['reason']
             # tablename = request.form['tablename']
             # sql = f"delete from {tablename} where att_date = ?"
-            sql = f"delete from manual where att_date = ?"
-            cur.execute(sql, (att_date,))
+            sql = f"delete from manual where att_date = ? and staff = ?"
+            cur.execute(sql, (att_date, staff))
             db.commit()
             # all changes should go to the manual table.
             sql = f'''
-                insert into manual (staff, att_date, att_time, notes)
+                insert into manual (staff, att_date, att_time, reason)
                 values (?, ?, ?, ?)
             '''
-            cur.execute(sql, (staff, att_date, clock_in, notes))
+            cur.execute(sql, (staff, att_date, clock_in, reason))
             db.commit()
-            cur.execute(sql, (staff, att_date, clock_out, notes))
+            cur.execute(sql, (staff, att_date, clock_out, reason))
             db.commit()
         
     return redirect(url_for('home'))
 
 @app.route('/add_new_record/<sid>', methods=['GET', 'POST'])
 def add_new_record(sid):
+    if not logged_in():
+        return redirect(url_for('auth.login'))
+
+    auth = (DATA_MANAGER, HR_MANAGER, ADMIN)
+    user = session['user']
+
+    if not hasauth(user['auth'], auth):
+        return redirect(request.referrer)
+
     # figure out the gaps and only give an option to add where there's a gap.
     # otherwise update/overwrite existing records.
     db = get_db()
@@ -773,7 +926,7 @@ def add_new_record(sid):
         select min(id) mid, att_date from manual where staff = ? group by att_date
         order by att_date asc
     '''
-    cur.execute(sql, (sid,))
+    cur.execute(sql, (sid,sid))
     data = cur.fetchall()
     if len(data) == 0:
         data = None
@@ -806,44 +959,71 @@ def add_new_record(sid):
     staff = cur.fetchone()
     if staff is None:
         return redirect(request.referrer)
-    
-    return render_template('add_new_clock.html', missing_dates=missing_dates, staff=staff)
+
+    sql = 'select id, code, description from reason'
+    cur.execute(sql)
+    reasons = cur.fetchall()
+    if len(reasons) == 0:
+        reasons = None
+
+    return render_template('add_new_clock.html', missing_dates=missing_dates, staff=staff, reasons=reasons)
         
 @app.route('/add_clock', methods=['GET', 'POST'])
 def add_clock():
+    if not logged_in():
+        return redirect(url_for('auth.login'))
+
+    auth = (HR_MANAGER, ADMIN)
+    user = session['user']
+
+    if not hasauth(user['auth'], auth):
+        return redirect(request.referrer)
+
     db = get_db()
     cur = db.cursor()
 
     if request.method == "POST":
-        sid = int(request.form['staff'])
-        att_date = request.form.get('att_date')
-        clock_in_hour = request.form.get('clock_in_hour')
-        clock_in_minute = request.form.get('clock_in_minute')
-        clock_out_hour = request.form.get('clock_out_hour')
-        clock_out_minute = request.form.get('clock_out_minute')
-        notes = request.form['notes']
+        if 'cancel' not in request.form['submit']:
+            sid = int(request.form['staff'])
+            att_date = request.form.get('att_date')
+            clock_in_hour = request.form.get('clock_in_hour')
+            clock_in_minute = request.form.get('clock_in_minute')
+            clock_out_hour = request.form.get('clock_out_hour')
+            clock_out_minute = request.form.get('clock_out_minute')
+            reason = request.form.get('reason')
 
-        sql = 'select id, firstname, lastname from staff where id = ?'
-        cur.execute(sql, (sid,))
-        staff = cur.fetchone()
+            sql = 'select id, firstname, lastname from staff where id = ?'
+            cur.execute(sql, (sid,))
+            staff = cur.fetchone()
 
-        clock_in = f"{clock_in_hour}:{clock_in_minute}:00"
-        clock_out = f"{clock_out_hour}:{clock_out_minute}:00"
+            clock_in = f"{clock_in_hour}:{clock_in_minute}:00"
+            clock_out = f"{clock_out_hour}:{clock_out_minute}:00"
 
-        savedata = {
-            'staff': staff['id'],
-            'att_date': att_date,
-            'clock_in': clock_in,
-            'clock_out': clock_out,
-            'notes': notes
-        }
+            savedata = {
+                'staff': staff['id'],
+                'att_date': att_date,
+                'clock_in': clock_in,
+                'clock_out': clock_out,
+                'reason': reason
+            }
 
-        return render_template('add_clock_confirm.html', att_record=savedata, staff=staff)
+            return render_template('add_clock_confirm.html', att_record=savedata, staff=staff)
+        else:
+            return redirect(url_for('edit_attendance'))
     
-    return redirect(request.referrer)
+    return redirect(url_for('edit_attendance'))
 
 @app.route('/save_clocks', methods=['GET', 'POST'])
 def save_clocks():
+    if not logged_in():
+        return redirect(url_for('auth.login'))
+
+    auth = (HR_MANAGER, ADMIN)
+    user = session['user']
+
+    if not hasauth(user['auth'], auth):
+        return redirect(request.referrer)
+
     db = get_db()
     cur = db.cursor()
 
@@ -853,17 +1033,113 @@ def save_clocks():
             att_date = request.form['att_date']
             clock_in = request.form['clock_in']
             clock_out = request.form['clock_out']
-            notes = request.form['notes']
+            reason = request.form['reason']
 
             sql = '''
-                insert into manual (staff, att_date, att_time, notes)
+                insert into manual (staff, att_date, att_time, reason)
                 values (?, ?, ?, ?)
             '''
 
-            cur.execute(sql, (staff, att_date, clock_in, notes))
+            cur.execute(sql, (staff, att_date, clock_in, reason))
             db.commit()
-            cur.execute(sql, (staff, att_date, clock_out, notes))
+            cur.execute(sql, (staff, att_date, clock_out, reason))
             db.commit()
 
     return redirect(url_for('home'))
 
+@app.route('/useradmin', methods=['GET', 'POST'])
+def useradmin():
+    # db = get_db()
+    # cur = db.cursor()
+
+    # if request.method == "POST":
+    #     pass
+
+    return render_template('under_construction.html', page="User Admin Module")
+
+
+@app.route('/staffadmin', methods=['GET', 'POST'])
+def staffadmin():
+    # db = get_db()
+    # cur = db.cursor()
+
+    # if request.method == "POST":
+    #     pass
+
+    return render_template('under_construction.html', page="Staff Admin Module")
+
+@app.route('/clockreports', methods=['GET', 'POST'])
+def clockreports():
+    if not logged_in():
+        return redirect(url_for('auth.login'))
+
+    auth = (HR_MANAGER, ADMIN)
+    user = session['user']
+
+    if not hasauth(user['auth'], auth):
+        return redirect(request.referrer)
+
+    db = get_db()
+    cur = db.cursor()
+    sql = 'select id, firstname, lastname from staff'
+    cur.execute(sql)
+    stafflist = cur.fetchall()
+
+    if request.method == "POST":
+        staff = int(request.form.get('selectstaff'))
+        if staff == 0:
+            return redirect(request.referrer)
+
+        # get all records from ATTENDANCE which have an entry in MANUAL
+        # get all records in MANUAL that do not exist in ATTENDANCE
+        
+    return render_template('clockreport.html', stafflist=stafflist)
+
+@app.route('/delete_attendance', methods=['GET', 'POST'])
+def delete_attendance():
+    if not logged_in():
+        return redirect(url_for('auth.login'))
+
+    auth = (DATA_MANAGER, HR_MANAGER, ADMIN)
+    user = session['user']
+
+    if not hasauth(user['auth'], auth):
+        return redirect(request.referrer)
+
+    db = get_db()
+    cur = db.cursor()
+    if request.method == "POST":
+        if 'cancel' not in request.form['submit']:
+            staff = int(request.form['staff'])
+            att_date = request.form['att_date']
+            clock_in = request.form['clock_in']
+            clock_out = request.form['clock_out']
+            reason = request.form['reason']
+            # tablename = request.form['tablename']
+            # sql = f"delete from {tablename} where att_date = ?"
+            sql = f"delete from manual where att_date = ? and staff = ?"
+            cur.execute(sql, (att_date, staff))
+            db.commit()
+            sql = 'select id, code, description from reason where code = ?'
+            cur.execute(sql, (reason,))
+            reason_data = cur.fetchone()
+            sql = 'select id, firstname, lastname from staff where id = ?'
+            cur.execute(sql, (staff,))
+            staff_data = cur.fetchone()
+            
+            att_data = {
+                'id': staff,
+                'staff_name': f'{staff_data['firstname']} {staff_data['lastname']}',
+                'att_date': att_date,
+                'clock_in': clock_in,
+                'clock_out': clock_out,
+                'reason_code': reason,
+                'reason_description': reason_data['description'],
+                'table': 'manual'
+            }
+            message = f'Successfully deleted record for date {att_date}'
+            
+            return render_template('deleteresult.html', att_data=att_data, message=message)
+                                   
+        
+    return redirect(url_for('home'))

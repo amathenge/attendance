@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% from 'utils.j2' import nav %}
+
+{% block title %}Delete Attendance Result{% endblock %}
+
+{% block heading %}Delete Attendance Results{% endblock %}
+
+{% set user = session['user'] %}
+
+{% block content %}
+<div class="row justify-content-center my-2">
+    <div class="col">
+    {{ nav(user) }}
+    </div>
+</div>
+<div class="row justify-content-center my-5">
+    <div class="col justify-content-center">
+        <p class="text-center fw-bold">{{ message }}</p>
+    </div>
+</div>
+<div class="row justify-content-center my-5">
+    <div class="col">
+        <table class="table table-striped">
+            <tr>
+                <th scope="col">Staff ID</th>
+                <th>Staff Name</th>
+                <th>Clock in/out data</th>
+                <th>Reason</th>
+                <th>Table</th>
+            </tr>
+            <tr>
+                <td scope="row">{{ att_data.id }}</td>
+                <td>{{ att_data.staff_name }}</td>
+                <td>{{ att_data.clock_in }} - {{ att_data.clock_out }}</td>
+                <td>{{ att_data.reason_code }}: {{ att_data.reason_description }}</td>
+                <td>{{ att_data.table }}</td>
+            </tr>
+        </table>
+    </div>
+</div>
+{% endblock %}

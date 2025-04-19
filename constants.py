@@ -1,0 +1,11 @@
+''' GLOBAL CONSTANTS THAT CAN BE IMPORTED '''
+
+__all__ = ["ADMIN", "HR_MANAGER", "DATA_MANAGER", "USER_MANAGER"]
+__author__ = "Andrew Mathenge"
+__version__ = 0.1
+
+
+ADMIN=1
+HR_MANAGER=2
+DATA_MANAGER=3
+USER_MANAGER=4

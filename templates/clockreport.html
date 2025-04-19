@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+{% from 'utils.j2' import nav %}
+
+{% block title %}Data Change Report{% endblock %}
+
+{% block heading %}Data Change Report{% endblock %}
+
+{% set user = session['user'] %}
+
+{% block content %}
+<div class="row justify-content-center my-2">
+    <div class="col">
+    {{ nav(user) }}
+    </div>
+</div>
+<form action="{{ url_for('clockreports') }}" method="POST">
+    <div class="row justify-content-center">
+        <div class="col">
+            <select class="form-select" id="selectstaff" name="selectstaff">
+                <option values="0">Select Staff</option>
+                {% for person in stafflist %}
+                <option value="{{ person.id }}">{{ person.firstname }}&nbsp;{{ person.lastname }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col d-flex justify-content-start">
+            <button class="btn btn-primary" type="submit">Get Data Changes</button>
+        </div>
+    </div>
+</form>
+{% if staff %}
+<div class="row justify-content-center">
+    <div class="col">
+        <p class="text-center">Selected id={{ staff.id }}, name={{ staff.firstname }}&nbsp;{{ staff.lastname }}</p>
+    </div>
+</div>
+{% endif %}
+<div class="row justify-content-center">
+    <div class="col justify-content-center">
+        {% if data %}
+        <table class="table table-striped">
+            <tr>
+                <th scope="col">No.</th>
+                <th>Day No</th>
+                <th>Weekday</th>
+                <th>Formatted</th>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Manual Entry</th>
+            </tr>
+            {% for row in data %}
+            <tr>
+                <!-- <td scope="row">{{ loop.index }}</td>
+                <td>{{ row['weekday'] }}</td>
+                <td>{{ row['day'] }}</td>
+                <td>{{ row['daynumber'] }} {{ row['themonth'] }} {{ row['theyear'] }}</td>
+                <td>{{ row['att_date'] }}</td>
+                <td>{{ row['att_time'] }}</td>
+                <td>{% if row['manual_flag'] %}<strong>M</strong>{% else %}&nbsp;{% endif %}</td> -->
+                <td scope="row">{{ loop.index }}</td>
+                <td>{{ row['att_date']|to_date('%w') }}</td>
+                <td>{{ row['att_date']|to_date('%A') }}</td>
+                <td>{{ row['att_date']|to_date('%d') }} {{ row['att_date']|to_date('%B') }} {{ row['att_date']|to_date('%Y') }}</td>
+                <td>{{ row['att_date'] }}</td>
+                <td>{{ row['att_time'] }}</td>
+                <td>{% if row['manual_flag'] %}<strong>M</strong>{% else %}&nbsp;{% endif %}</td>
+            </tr>
+            {% endfor %}
+        </table>
+        {% else %}
+        <p class="text-center">No Data</p>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

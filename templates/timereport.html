@@ -56,12 +56,12 @@
             {% for row in data %}
             <tr>
                 <td scope="row">{{ loop.index }}</td>
-                <td>{{ row['att_date'] }}</td>
+                <td>{{ row['att_date']|to_date('%d %b %Y') }}</td>
                 <td>{{ row['dayofweek'] }}</td>
                 <td>{{ row['start_time'] }}</td>
                 <td>{{ row['end_time'] }}</td>
                 <td>{{ row['work_hours'] }}</td>
-                <td>{{ row['message']|safe }}</td>
+                <td>{{ row['message']|nl2br|safe }}</td>
             </tr>
             {% endfor %}
         </table>

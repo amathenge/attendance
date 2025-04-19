@@ -1,8 +1,8 @@
 {% extends 'base.html' %}
 {% from 'utils.j2' import nav, inputitem, submitbutton, cancelbutton %}
 
-{% block title %}Save Confirm - attendance record{% endblock %}
-{% block heading %}Save Confirm - attendance record{% endblock %}
+{% block title %}Delete Confirm - attendance record{% endblock %}
+{% block heading %}Delete Confirm - attendance record{% endblock %}
 
 {% set user = session['user'] %}
 
@@ -14,7 +14,7 @@
 </div>
 
 {% if att_record %}
-<form action="{{ url_for('save_attendance') }}" method="POST">
+<form action="{{ url_for('delete_attendance') }}" method="POST">
     <div class="row justify-content-center">
         <div class="col">
             {% if staff %}
@@ -26,7 +26,7 @@
     </div>
     <div class="row justify-content-center">
         <div class="col">
-            <p class="text-center">Confirm Manual Entry Attendance Record</p>
+            <p class="text-center">Confirm Deletion of Attendance Record</p>
             <table class="table table-striped">
                 <tr>
                     <th>Original Entry</th>
@@ -73,7 +73,7 @@
     </div>
     <div class="row justify-content-center">
         <div class="col-3">
-            {{ submitbutton('Save Record') }}
+            {{ submitbutton('Delete Record') }}
         </div>
         <div class="col-3">
             {{ cancelbutton('Cancel') }}

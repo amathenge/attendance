@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% from 'utils.j2' import nav, submitbutton, textitem %}
+{% from 'utils.j2' import nav, submitbutton, textitem, cancelbutton %}
 
 {% block title %}Add a new Clocking entry{% endblock %}
 {% block heading %}Add a new Clocking entry{% endblock %}
@@ -16,24 +16,29 @@
 {% if staff %}
     <div class="row justify-content-center my-3">
         <div class="col">
-            <p class="text-center">Add Clock-IN and Clock-OUT for {{ staff.firstname }} {{ staff.lastname }}</p>
+            <p class="text-center fw-bolder">Add Clock-IN and Clock-OUT for {{ staff.firstname }} {{ staff.lastname }}</p>
         </div>
     </div>
     {% if missing_dates %}
     <form action="{{ url_for('add_clock') }}" method="POST">
-        <div class="row justify-content-center">
+        <div class="row justify-content-center py-3 border-bottom border-light-subtle">
             <div class="col-2 d-flex">
                 <span class="input-group-text">Staff ID:</span>
                 <input type="text" name="staff" class="form-control" value="{{ staff.id }}" readonly>
             </div>
         </div>
-        <div class="row justify-content-center my-2">
-            <div class="col-3">
-                <select class="form-select" name="att_date">
-                    {% for item in missing_dates %}
-                    <option value="{{ item.att_date|to_date('%Y-%m-%d') }}">{{ item.att_date|to_date('%d %b %Y') }}&nbsp;--&nbsp;{{ item.att_date|to_date('%A') }}</option>
-                    {% endfor %}
-                </select>
+        <div class="row justify-content-center py-3 border-bottom border-light-subtle">
+            <div class="col-4 d-flex">
+                <div class="input-group d-flex px-2">
+                    <label for="att_date" class="form-label pt-2">
+                        <strong>Choose Date:&nbsp;&nbsp;&nbsp;</strong>
+                    </label>
+                    <select class="form-select" name="att_date">
+                        {% for item in missing_dates %}
+                        <option value="{{ item.att_date|to_date('%Y-%m-%d') }}">{{ item.att_date|to_date('%d %b %Y') }}&nbsp;--&nbsp;{{ item.att_date|to_date('%A') }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
             </div>
             <div class="col-6 d-flex align-items-center">
                 <div class="input-group d-flex w-50 px-2">
@@ -42,7 +47,7 @@
                     </label>
                     &nbsp;&nbsp;
                     <select class="form-select" name="clock_in_hour">
-                        <option value="00 selected">00</option>
+                        <option value="00" selected>00</option>
                         <option value="01">01</option>
                         <option value="02">02</option>
                         <option value="03">03</option>
@@ -69,7 +74,7 @@
                     </select>
                     <span>&nbsp;:&nbsp;</span>
                     <select class="form-select" name="clock_in_minute">
-                        <option value="00 selected">00</option>
+                        <option value="00" selected>00</option>
                         <option value="05">05</option>
                         <option value="10">10</option>
                         <option value="15">15</option>
@@ -89,7 +94,7 @@
                     </label>
                     &nbsp;&nbsp;
                     <select class="form-select" name="clock_out_hour">
-                        <option value="00 selected">00</option>
+                        <option value="00" selected>00</option>
                         <option value="01">01</option>
                         <option value="02">02</option>
                         <option value="03">03</option>
@@ -116,7 +121,7 @@
                     </select>
                     <span>&nbsp;:&nbsp;</span>
                     <select class="form-select" name="clock_out_minute">
-                        <option value="00 selected">00</option>
+                        <option value="00" selected>00</option>
                         <option value="05">05</option>
                         <option value="10">10</option>
                         <option value="15">15</option>
@@ -132,14 +137,26 @@
                 </div>
             </div>
         </div>
-        <div class="row justify-content-center">
-            <div class="col-4">
-                <textarea class="form-control" name="notes" rows="3" required></textarea>
+        <div class="row justify-content-center py-3 border-bottom border-light-subtle">
+            <div class="col-6 justify-content-center">
+                <div class="input-group w-75 mx-auto">
+                    <label for="reason" class="form-label pt-2">
+                        <strong>Reason:&nbsp;&nbsp;&nbsp;</strong>
+                    </label>
+                    <select class="form-select" name="reason" required>
+                        {% for reason in reasons %}
+                        <option value="{{ reason.code }}">{{ reason.description }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
             </div>
         </div>
-        <div class="row justify-content-center">
-            <div class="col-4 d-grid">
+        <div class="row justify-content-center py-3">
+            <div class="col-3 d-grid mx-1">
                 {{ submitbutton('Add Clocking Data') }}
+            </div>
+            <div class="col-3 d-grid mx-1">
+                {{ cancelbutton('Cancel') }}
             </div>
         </div>
     </form>
