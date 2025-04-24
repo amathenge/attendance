@@ -1129,7 +1129,7 @@ def delete_attendance():
             
             att_data = {
                 'id': staff,
-                'staff_name': f'{staff_data['firstname']} {staff_data['lastname']}',
+                'staff_name': f"{staff_data['firstname']} {staff_data['lastname']}",
                 'att_date': att_date,
                 'clock_in': clock_in,
                 'clock_out': clock_out,
