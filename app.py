@@ -18,6 +18,7 @@ app.config['REPORT_FOLDER'] = report_folder
 # max file size to upload is 10 MB
 app.config['MAX_CONTENT_PATH'] = 10 * 1024 * 1024
 
+# jinja macros
 from macros import *
 
 @app.teardown_appcontext
