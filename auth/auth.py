@@ -16,7 +16,7 @@ def login():
         return redirect(url_for('home'))
     
     now = datetime.now()
-    now_string = now.strftime('%d%b%Y %H:%M:%S').upper()
+    now_string = now.strftime('%Y-%m-%d %H:%M:%S').upper()
     message = None
 # -----------------
 # debugging - enable this code
