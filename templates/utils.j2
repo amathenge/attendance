@@ -118,9 +118,22 @@
         <div class="form-group d-grid my-2 text-center"> 
             <button class="btn btn-primary mt-3" type="submit" name="submitpassword" id="submitpassword" on>Login with Password</button>
         </div>
+        <div class="justify-content-center d-flex py-2 border-bottom border-top">
+             <p class="flex-fill align-self-center my-auto text-center">2FA Authentication type</p>
+        </div>
+        <div class="form-group d-flex justify-content-center my-2 border-bottom">
+            <div class="form-check form-check-inline px-3">
+                <span class="input-form-text">Google Authenticator</span>
+                <input class="form-check-input" type="radio" name="authtype" value="google" checked>
+            </div>
+            <div class="form-check form-check-inline px-3">
+                <span class="input-form-text">SMS and Email</span>
+                <input class="form-check-input" type="radio" name="authtype" value="sms">
+            </div>
+        </div>
     </form>
     <div class="d-grid my-5 text-center"> 
-        <a class="btn btn-primary" href="{{ url_for('auth.otplogin') }}">Use OTP Login</a>
+        <a class="btn btn-primary" href="{{ url_for('auth.otplogin') }}">Use OTP Login - No Password</a>
     </div>
 {%- endmacro %}
 
@@ -131,6 +144,19 @@
             <label for="email">Account Email</label> 
             <input class="form-control" type="text" id="email" name="email" maxlength="32" required>
         </div> 
+        <div class="justify-content-center d-flex py-2 border-bottom border-top">
+             <p class="flex-fill align-self-center my-auto text-center">2FA Authentication type</p>
+        </div>
+        <div class="form-group d-flex justify-content-center my-2 border-bottom">
+            <div class="form-check form-check-inline px-3">
+                <span class="input-form-text">Google Authenticator</span>
+                <input class="form-check-input" type="radio" name="authtype" value="google" checked>
+            </div>
+            <div class="form-check form-check-inline px-3">
+                <span class="input-form-text">SMS and Email</span>
+                <input class="form-check-input" type="radio" name="authtype" value="sms">
+            </div>
+        </div>
         <div class="form-group d-grid my-2 text-center"> 
             <button class="btn btn-primary mt-3" type="submit" name="submitemail" id="submitemail" on>Submit Email</button>
         </div>
@@ -138,10 +164,10 @@
 {%- endmacro %}
 
 # ONE_TIME FORM
-{% macro one_time(url) -%}
+{% macro one_time(url, authtype=None) -%}
     <form action="{{ url }}" method="POST" onsubmit="submitbutton.disabled=true; return true;">
         <div class="form-group my-2">
-            <label for="otp">Please Enter PIN</label>
+            <label for="otp">Please Enter {% if not authtype %}OTP PIN{% else %}{{ authtype }}{% endif %}</label>
             <input class="form-control" type="text" id="otp" name="otp" maxlength="8" required>
         </div>
         <div class="form-group d-grid my-2 text-center">

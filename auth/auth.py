@@ -3,6 +3,8 @@ from database import get_db, hashpass, checkpass, onetime, otp_check
 from datetime import datetime
 from sms import sendSMS
 from sendEmail import send_otp_email
+import pyotp
+import cred
 
 auth = Blueprint("auth", __name__, static_folder="static", template_folder="templates")
 
@@ -79,18 +81,21 @@ def login():
                 session['user'] = user
                 session.modified = True
                 if user['tfaauth']:
-                    otp = onetime()
-                    sql = 'update otp set valid = 0 where userid = ?'
-                    cur.execute(sql, (user['id'],))
-                    db.commit()
-                    now = datetime.now()
-                    sql = 'insert into otp (userid, otp, otp_time, valid) values (?, ?, ?, ?)'
-                    cur.execute(sql, (user['id'], otp, now, 1))
-                    db.commit()
-                    message = f"Attendance App: enter the following OTP to login {otp}"
-                    sendSMS(message, user['phone'])
-                    send_otp_email(message, user['email'])
-                    return render_template('auth/otp.html')
+                    if request.form['authtype'] == "sms":
+                        otp = onetime()
+                        sql = 'update otp set valid = 0 where userid = ?'
+                        cur.execute(sql, (user['id'],))
+                        db.commit()
+                        now = datetime.now()
+                        sql = 'insert into otp (userid, otp, otp_time, valid) values (?, ?, ?, ?)'
+                        cur.execute(sql, (user['id'], otp, now, 1))
+                        db.commit()
+                        message = f"Attendance App: enter the following OTP to login {otp}"
+                        sendSMS(message, user['phone'])
+                        send_otp_email(message, user['email'])
+                        return render_template('auth/otp.html')
+                    else:
+                        return render_template('auth/google_authenticator.html')
                 else:
                     userid = session['user']['id']
                     now = datetime.now()
@@ -140,6 +145,34 @@ def check_otp():
                 return redirect(url_for('home'))
             else:
                 message = 'Timeout... try again'
+    return render_template('auth/login.html', message=message)
+
+@auth.route('/check_googleauth', methods=['GET', 'POST'])
+def check_googleauth():
+    if 'user' in session and session['user']['otp']:
+        return redirect(url_for('home'))
+
+    now = datetime.now()
+    now_string = now.strftime('%d%b%Y %H:%M:%S').upper()
+    message = None
+
+    if request.method == "POST":
+        otp = request.form['otp']
+        userid = session['user']['id']
+
+        totp = pyotp.TOTP(cred.secret_key)
+        if totp.verify(otp):
+            db = get_db()
+            cur = db.cursor()
+            sql = 'update users set lastlogin = ? where id = ?'
+            cur.execute(sql, (now, userid))
+            db.commit()
+            session['user']['otp'] = otp
+            session['modified'] = True
+            return redirect(url_for('home'))
+        else:
+            message = "Invalid Authenticator Code. Try again"
+
     return render_template('auth/login.html', message=message)
 
 @auth.route('/logout', methods=['GET','POST'])
@@ -192,17 +225,20 @@ def otplogin():
             session['user'] = user
             session.modified = True
             # go and get the OTP
-            otp = onetime()
-            sql = 'update otp set valid = 0 where userid = ?'
-            cur.execute(sql, (user['id'],))
-            db.commit()
-            now = datetime.now()
-            sql = 'insert into otp (userid, otp, otp_time, valid) values (?, ?, ?, ?)'
-            cur.execute(sql, (user['id'], otp, now, 1))
-            db.commit()
-            message = f"Attendance App: enter the following OTP to login {otp}"
-            sendSMS(message, user['phone'])
-            send_otp_email(message, user['email'])
-            return render_template('auth/otp.html')
+            if request.form["authtype"] == "sms":
+                otp = onetime()
+                sql = 'update otp set valid = 0 where userid = ?'
+                cur.execute(sql, (user['id'],))
+                db.commit()
+                now = datetime.now()
+                sql = 'insert into otp (userid, otp, otp_time, valid) values (?, ?, ?, ?)'
+                cur.execute(sql, (user['id'], otp, now, 1))
+                db.commit()
+                message = f"Attendance App: enter the following OTP to login {otp}"
+                sendSMS(message, user['phone'])
+                send_otp_email(message, user['email'])
+                return render_template('auth/otp.html')
+            else:
+                return render_template('auth/google_authenticator.html')
     
     return render_template('auth/otplogin.html', message=message)
