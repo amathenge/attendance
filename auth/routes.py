@@ -5,6 +5,7 @@ from sms import sendSMS
 from sendEmail import send_otp_email
 import pyotp
 import cred
+from . import auth
 
 DEBUGGING = False
 
